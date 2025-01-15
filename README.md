@@ -17,7 +17,7 @@ Find and replace all on all files (CMD+SHIFT+F):
 The Bitcoin equivalent of Wagmi for doing amazing things.
 
 - [✨ &nbsp;Release Notes](/CHANGELOG.md)
-  <!-- - [🏀 Online playground](https://stackblitz.com/github/@miinded/wagmi-btc?file=playground%2Fapp.vue) -->
+  <!-- - [🏀 Online playground](https://stackblitz.com/github/@miinded/nuxt-wagmi-btc?file=playground%2Fapp.vue) -->
   <!-- - [📖 &nbsp;Documentation](https://example.com) -->
 
 ## Features
@@ -32,8 +32,17 @@ The Bitcoin equivalent of Wagmi for doing amazing things.
 
 Install the module to your Nuxt application with one command:
 
+Add in uncommitted .npmrc
+
+```
+@miinded:registry=https://gitlab.com/api/v4/packages/npm/
+//gitlab.com/api/v4/packages/npm/:_authToken=<MiindedToken>
+```
+
+and install with :
+
 ```bash
-npx nuxi module add wagmi-btc
+npx nuxi@latest module add @miinded/nuxt-wagmi-btc
 ```
 
 That's it! You can now use Wagmi BTC in your Nuxt app ✨

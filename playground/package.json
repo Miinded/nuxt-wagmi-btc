@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "wagmi-btc-playground",
+  "name": "@miinded/nuxt-wagmi-btc-playground",
   "type": "module",
   "scripts": {
     "dev": "nuxi dev",

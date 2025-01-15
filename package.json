@@ -1,8 +1,8 @@
 {
   "name": "@miinded/nuxt-wagmi-btc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The Bitcoin equivalent of Wagmi",
-  "repository": "@miinded/wagmi-btc",
+  "repository": "@miinded/nuxt-wagmi-btc",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -18,11 +18,12 @@
     "dist"
   ],
   "scripts": {
-    "prepack": "nuxt-module-build build",
+    "prepack": "nuxt-module-build build && npm run copy-assets",
+    "copy-assets": "node scripts/copy-assets.js",
     "dev": "nuxi dev playground",
     "dev:build": "nuxi build playground",
     "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
-    "release": "npm run lint && npm run test && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
+    "release": "npm run lint && npm run prepack && changelogen --release && npm publish && git push --follow-tags",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
