@@ -1,6 +1,6 @@
 {
   "name": "@miinded/nuxt-wagmi-btc",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "The Bitcoin equivalent of Wagmi",
   "repository": "@miinded/nuxt-wagmi-btc",
   "license": "MIT",
@@ -15,7 +15,11 @@
   "main": "./dist/module.cjs",
   "types": "./dist/types.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src/**/*.ts",
+    "!src/module.ts",
+    "!src/**/*.test.ts",
+    "!src/**/*.test-d.ts"
   ],
   "scripts": {
     "prepack": "nuxt-module-build build && npm run copy-assets",
