@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BitcoinConnector } from '../src/types';
+import type { BitcoinConnector } from '../src/types/wagmi-btc';
 
 const a = getConnectors();
 

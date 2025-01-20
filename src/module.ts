@@ -1,9 +1,8 @@
-import { addImports, createResolver, defineNuxtModule } from '@nuxt/kit';
-import path from 'node:path';
-import fs from 'node:fs/promises';
-import type { BitcoinConnector, WagmiBtcModuleOptions } from './types';
+import { addImportsDir, createResolver, defineNuxtModule } from '@nuxt/kit';
+import type { BitcoinConnector, ModuleOptions } from './types/wagmi-btc';
+export type { BitcoinConnector, BitcoinProvider, ModuleOptions } from './types/wagmi-btc';
 
-export default defineNuxtModule<WagmiBtcModuleOptions>({
+export default defineNuxtModule<ModuleOptions>({
   meta: {
     name: 'wagmi-btc',
     configKey: 'wagmiBtc',
@@ -35,68 +34,21 @@ export default defineNuxtModule<WagmiBtcModuleOptions>({
     ],
   },
   setup(_options, _nuxt) {
-    const { resolve } = createResolver(import.meta.url);
+    const resolver = createResolver(import.meta.url);
 
     _nuxt.hook('prepare:types', ({ references }) => {
       references.push({ types: 'wagmi-btc' });
     });
 
-    const moduleAssetsDir = path.resolve(__dirname, 'assets');
-    const nuxtStaticDir = path.resolve(_nuxt.options.rootDir, 'public');
+    addImportsDir(resolver.resolve('runtime/composables'));
 
-    _nuxt.hook('build:before', async () => {
-      try {
-        const destPath = path.join(nuxtStaticDir, _options.iconPath ?? 'icon');
-        try {
-          // Créer le dossier récursivement si il n'existe pas
-          await fs.mkdir(destPath, { recursive: true });
-        } catch (err) {
-          console.error('Erreur lors de la création du dossier:', err);
-        }
-
-        const assets = await fs.readdir(moduleAssetsDir);
-        for (const asset of assets) {
-          const src = path.join(moduleAssetsDir, asset);
-          const dest = path.join(destPath, asset);
-          try {
-            await fs.stat(dest); // Vérifie si le fichier existe déjà
-          } catch (err: any) {
-            if (err.code === 'ENOENT') {
-              // Si le fichier n'existe pas, le copier
-              await fs.copyFile(src, dest);
-              console.log(`File copied: ${dest}`);
-            } else {
-              // Si une autre erreur survient, la relancer
-              throw err;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error copying assets:', error);
-      }
+    _nuxt.hook('nitro:config', async (nitroConfig) => {
+      nitroConfig.publicAssets ||= [];
+      nitroConfig.publicAssets.push({
+        dir: resolver.resolve('runtime/public'),
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+      });
     });
-
-    const composables = resolve('./runtime/composables');
-    const names = [
-      //
-      'unisatProvider',
-      'unisatConnect',
-      'unisatSignMessage',
-      'xverseProvider',
-      'xverseConnect',
-      'xverseSignMessage',
-      'phantomProvider',
-      'phantomConnect',
-      'phantomSignMessage',
-      'leatherProvider',
-      'leatherConnect',
-      'leatherSignMessage',
-      //
-      'useWagmiBtc',
-      'getConnectors',
-      'getProvider',
-    ];
-    addImports(names.map((name) => ({ from: composables, name })));
 
     for (const index in _options.connectors) {
       const provider = _options.connectors[index] as BitcoinConnector;
