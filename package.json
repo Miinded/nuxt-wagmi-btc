@@ -1,6 +1,6 @@
 {
   "name": "@miinded/nuxt-wagmi-btc",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "The Bitcoin equivalent of Wagmi",
   "license": "MIT",
   "type": "module",
