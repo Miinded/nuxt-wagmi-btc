@@ -1,7 +1,7 @@
 import { useRuntimeConfig } from '#app';
-import type { WagmiBtcModuleOptions } from '../../types';
+import type { ModuleOptions } from '~/src/module';
 
 export const useWagmiBtc = () => {
   const config = useRuntimeConfig().app;
-  return config.wagmiBtc as WagmiBtcModuleOptions;
+  return config.wagmiBtc as ModuleOptions;
 };
