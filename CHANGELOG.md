@@ -1,6 +1,10 @@
 # Changelog
 
 
+## v0.1.2
+
+[compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.1...v0.1.2)
+
 ## v0.1.1
 
 [compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.0.6...v0.1.1)

@@ -2,7 +2,6 @@ import { AddressPurpose, type InputToSign, type SignPsbtResult } from 'sats-conn
 import { UserRejectedRequestError } from 'viem';
 import type { BitcoinAddress, WagmiBtcAddress } from '../../types/wagmi-btc';
 import { broadcastTx, convertPsbt, createPsbt, finalizeAndExtractTx, getUtxos, Uint8ArrayToBase64 } from './tools';
-import { CustomError } from '../../utils/errors';
 
 export const phantomProvider = () => {
   let localProvider = null;
@@ -111,7 +110,7 @@ export const phantomSendBtc = async (recipients: {address: string; amount: numbe
     // 1️⃣ Récupérer les UTXOs de l'adresse du sender
     const utxos = await getUtxos(sender);
     if(!utxos || utxos.length === 0){
-      throw new CustomError("You don't have enough UTXOs")
+      throw new Error("You don't have enough UTXOs")
     }
 
     // 2️⃣ Construire la PSBT
