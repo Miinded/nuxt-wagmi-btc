@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.9
+
+[compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.8...v0.1.9)
+
+### 📖 Documentation
+
+- Add documentation ([b9c6c05](https://gitlab.com/miinded/nuxt-wagmi-btc/commit/b9c6c05))
+
+### ❤️ Contributors
+
+- Starker-xp <starker-xp@miinded.com>
+
 ## v0.1.8
 
 [compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.7...v0.1.8)
