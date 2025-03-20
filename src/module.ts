@@ -12,6 +12,11 @@ export default defineNuxtModule<ModuleOptions>({
     iconPath: '/icon',
     connectors: [
       {
+        id: 'magicEden',
+        name: 'Magic Eden',
+        icon: ':iconPath/magiceden-icon.png',
+      },
+      {
         id: 'leather',
         name: 'Leather',
         icon: ':iconPath/leather-icon.png',

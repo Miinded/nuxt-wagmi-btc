@@ -1,5 +1,5 @@
 import { useRuntimeConfig } from '#app';
-import type { ModuleOptions } from '~/src/module';
+import type { ModuleOptions } from '../../module';
 
 export const useWagmiBtc = () => {
   const config = useRuntimeConfig().app;
