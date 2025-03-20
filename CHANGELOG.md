@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.7
+
+[compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.6...v0.1.7)
+
+### 🩹 Fixes
+
+- Another test ([78f202c](https://gitlab.com/miinded/nuxt-wagmi-btc/commit/78f202c))
+
+### ❤️ Contributors
+
+- Starker-xp <starker-xp@miinded.com>
+
 ## v0.1.6
 
 [compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.5...v0.1.6)
