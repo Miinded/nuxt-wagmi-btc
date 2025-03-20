@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.5
+
+[compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.4...v0.1.5)
+
+### 🚀 Enhancements
+
+- Implement provider and rework some feature ([2e4be02](https://gitlab.com/miinded/nuxt-wagmi-btc/commit/2e4be02))
+
+### ❤️ Contributors
+
+- Starker-xp <starker-xp@miinded.com>
+
 ## v0.1.4
 
 [compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.3...v0.1.4)
