@@ -1,4 +1,4 @@
-import { addImportsDir, createResolver, defineNuxtModule } from '@nuxt/kit';
+import { addImportsDir, addPlugin, createResolver, defineNuxtModule } from '@nuxt/kit';
 import type { BitcoinConnector, ModuleOptions } from './types/wagmi-btc';
 export type { BitcoinConnector, BitcoinProvider, ModuleOptions } from './types/wagmi-btc';
 
@@ -44,6 +44,9 @@ export default defineNuxtModule<ModuleOptions>({
     _nuxt.hook('prepare:types', ({ references }) => {
       references.push({ types: 'wagmi-btc' });
     });
+
+    addPlugin(resolver.resolve('runtime/plugins/bitcoinjs.client'));
+
 
     addImportsDir(resolver.resolve('runtime/composables'));
 
