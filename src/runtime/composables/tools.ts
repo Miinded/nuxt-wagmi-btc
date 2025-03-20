@@ -1,8 +1,8 @@
-import * as bitcoin from 'bitcoinjs-lib';
+
 import { getProviderOrThrow, type Recipient, type SerializedRecipient, type SerializedSendBtcTransactionPayload } from 'sats-connect';
 import { createUnsecuredToken, type Json } from 'jsontokens';
 import type { BitcoinAddress, SendBtcTransactionOptions, SignMessageOptions, SignTransactionOptions } from '../../types/wagmi-btc';
-
+import { useNuxtApp } from '#app';
 
 export const isHex = (str: string): boolean => {
   return /^[0-9a-f]*$/i.test(str) && str.length % 2 === 0;
@@ -34,7 +34,8 @@ export const broadcastTx = async (txHex: string) => {
 };
 
 export  const finalizeAndExtractTx = (signedPsbtBase64: string): string => {
-  const psbt = bitcoin.Psbt.fromBase64(convertPsbt(signedPsbtBase64, 'base64'));
+  const { $bitcoin } = useNuxtApp();
+  const psbt = ($bitcoin as any).Psbt.fromBase64(convertPsbt(signedPsbtBase64, 'base64'));
   psbt.finalizeAllInputs();
   return psbt.extractTransaction().toHex();
 };
@@ -63,7 +64,8 @@ export const getUtxos = async (address: string) => {
 };
 
 export const createPsbt = async (sender: BitcoinAddress, recipients: { address: string; amount: number }[], utxos: { txid: string; vout: number; value: number; }[]): Promise<string> => {
-  const psbt = new bitcoin.Psbt({ network: bitcoin.networks.bitcoin });
+  const { $bitcoin } = useNuxtApp();
+  const psbt = new ($bitcoin as any).Psbt({ network: ($bitcoin as any).networks.bitcoin });
 
   // Récupérer le fee rate en sat/vByte
   const feeRate = await getFeeRate();
