@@ -2,7 +2,8 @@ import { defineNuxtPlugin } from '#app';
 
 export default defineNuxtPlugin(async (nuxtApp) => {
     if (import.meta.client) {
-        const bitcoin = await import('bitcoinjs-lib').then(m => m.default || m); // ✅ Force l'usage d'ESM
+        const bitcoinModule = await import('bitcoinjs-lib');
+        const bitcoin = bitcoinModule.default || bitcoinModule; // Assure la compatibilité
         nuxtApp.provide('bitcoin', bitcoin);
     }
   });
