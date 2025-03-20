@@ -45,6 +45,25 @@ and install with :
 npx nuxi@latest module add @miinded/nuxt-wagmi-btc
 ```
 
+Configure your app with :
+```ts
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
+export default defineNuxtConfig({
+  modules: ['@miinded/nuxt-wagmi-btc'],
+  app:  {
+    head: {
+      script: [{ textContent: 'exports = {};' }],
+    }
+  },
+   vite: {
+    optimizeDeps: {
+      include: ['buffer', 'jsontokens', 'bitcoinjs-lib'], 
+    },
+    plugins: [nodePolyfills()],
+  },
+});
+```
+
 That's it! You can now use Wagmi BTC in your Nuxt app ✨
 
 ## Contribution
