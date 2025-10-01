@@ -14,9 +14,9 @@ export const isBase64 = (str: string): boolean => {
 
 export const convertPsbt = (psbt: string, format: 'base64' | 'hex'): string => {
   if (format === "hex") {
-    return isHex(psbt) ? psbt: (Buffer.from(psbt, 'hex')).toString('base64');
+    return isHex(psbt) ? psbt: (Buffer.from(psbt, 'base64')).toString('hex');
   }
-  return isBase64(psbt) ? psbt: (Buffer.from(psbt, 'base64')).toString('hex');
+  return isBase64(psbt) ? psbt: (Buffer.from(psbt, 'hex')).toString('base64');
 }
 
 export const broadcastTx = async (txHex: string) => {
@@ -42,14 +42,14 @@ export  const finalizeAndExtractTx = (signedPsbtBase64: string): string => {
 
 export const getUtxos = async (address: string) => {
   const response = await fetch(`https://mempool.space/api/address/${address}/utxo`);
-  
+
   if (!response.ok) {
     throw new Error(`Erreur lors de la récupération des UTXOs: ${await response.text()}`);
   }
 
   const utxos = await response.json();
   return utxos.map((utxo: {
-    txid: string; 
+    txid: string;
     vout: number;
     value: number;
   }) => ({
@@ -57,7 +57,7 @@ export const getUtxos = async (address: string) => {
     vout: utxo.vout,
     value: utxo.value, // Montant en satoshis
   })) as {
-    txid: string; 
+    txid: string;
     vout: number;
     value: number;
   }[];
@@ -103,7 +103,7 @@ export const createPsbt = async (sender: BitcoinAddress, recipients: { address: 
 
   if (change > 0) {
     psbt.addOutput({ address: sender.address, value: change });
-  } 
+  }
 
   const e = psbt.toBase64(); // Retourne la PSBT en base64;
   return e;
