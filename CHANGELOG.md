@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.12
+
+[compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.11...v0.1.12)
+
+### 🩹 Fixes
+
+- Leather send btc ([b6da011](https://gitlab.com/miinded/nuxt-wagmi-btc/commit/b6da011))
+
+### ❤️ Contributors
+
+- EKCO <ekco@miinded.com>
+
 ## v0.1.11
 
 [compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.9...v0.1.11)
