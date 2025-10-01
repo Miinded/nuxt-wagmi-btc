@@ -39,7 +39,7 @@ export const magicEdenProvider = () => {
   };
 };
 
-export const magicEdenConnect = async (): Promise<WagmiBtcAddress> => { 
+export const magicEdenConnect = async (): Promise<WagmiBtcAddress> => {
   if (cardinalAddress.value.address !== '' && ordinalAddress.value.address !== '') {
     return {
       payment: cardinalAddress.value,
@@ -54,7 +54,7 @@ export const magicEdenConnect = async (): Promise<WagmiBtcAddress> => {
       purposes: [AddressPurpose.Payment, AddressPurpose.Ordinals],
       network: { type: BitcoinNetworkType.Mainnet}
     }));
-    
+
     if (result.addresses && result.addresses.length > 0) {
       const cardinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Payment)!;
       cardinalAddress.value = { address: cardinal.address || '', publicKey: cardinal.publicKey || ''};
@@ -91,7 +91,7 @@ export const magicEdenAddresses = async(): Promise<WagmiBtcAddress> => {
 export const magicEdenSignMessage = async (message: string| JSON): Promise<string> => {
   const provider = magicEdenProvider();
   const addresses = await magicEdenAddresses();
-  const signature = await new Promise((resolve, reject) => { 
+  const signature = await new Promise((resolve, reject) => {
     signMessage({
       getProvider: async () => provider as unknown as BitcoinProvider,
       payload: {
@@ -117,7 +117,7 @@ export const magicEdenSignMessage = async (message: string| JSON): Promise<strin
 
 export const magicEdenSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast: boolean): Promise<SignPsbtResult> => {
   const provider = magicEdenProvider();
-  const signature = await new Promise((resolve, reject) => { 
+  const signature = await new Promise((resolve, reject) => {
     signTransaction({
       getProvider: async () => provider as unknown as BitcoinProvider,
       payload: {
@@ -125,7 +125,7 @@ export const magicEdenSignPsbt = async (psbt: string, vIn: InputToSign[], broadc
           type: BitcoinNetworkType.Mainnet,
         },
         psbtBase64: convertPsbt(psbt, 'base64'),
-        broadcast, 
+        broadcast,
         message: '',
         inputsToSign: vIn,
       },
@@ -147,15 +147,15 @@ export const magicEdenSignPsbt = async (psbt: string, vIn: InputToSign[], broadc
 };
 
 export const magicEdenSendBtc = async (recipients: {address: string; amount: number}[]): Promise<string> => {
-  const tos = recipients.map(r => ({ 
-    address: r.address, 
+  const tos = recipients.map(r => ({
+    address: r.address,
     amountSats: BigInt(r.amount)
   }));
-  
+
   const provider = magicEdenProvider();
   const addresses = await magicEdenAddresses();
 
-  const response = await new Promise((resolve, reject) => { 
+  const response = await new Promise((resolve, reject) => {
     sendBtcTransaction({
       getProvider: async () => provider as unknown as BitcoinProvider,
       payload: {

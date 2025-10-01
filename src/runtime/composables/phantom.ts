@@ -42,7 +42,7 @@ export const phantomProvider = () => {
 export const phantomConnect = async (): Promise<WagmiBtcAddress> => {
   try {
     return await phantomAddresses();
-  
+
   } catch (e) {
     console.log(e);
     throw new UserRejectedRequestError(new Error('User rejected the request'));
@@ -85,7 +85,7 @@ export const phantomSignPsbt = async (psbt: string, vIn: InputToSign[], broadcas
     const m = hexString.match(/.{1,2}/g);
     return Uint8Array.from(m!.map((byte) => Number.parseInt(byte, 16)))
   };
-  
+
   const psbtUint8Array = await provider.signPSBT(fromHexString(psbtHex), {
     inputsToSign: vIn
   });
@@ -116,8 +116,8 @@ export const phantomSendBtc = async (recipients: {address: string; amount: numbe
     // 2️⃣ Construire la PSBT
     const psbtBase64 = await createPsbt(addresses.payment, recipients, utxos);
     const result =  await phantomSignPsbt(psbtBase64, [
-      { 
-        address: sender, 
+      {
+        address: sender,
         signingIndexes: Array.from({ length: utxos.length }, (_, index) => index) // Il n'y a que des uxtos de l'utilisateur en cours.
       }
     ] , true);

@@ -2,6 +2,7 @@ import type { InputToSign, SendTransferResult, SignPsbtResult } from 'sats-conne
 import { UserRejectedRequestError } from 'viem';
 import type { BitcoinAddress, WagmiBtcAddress } from '../../types/wagmi-btc';
 import { ref } from 'vue';
+import { convertPsbt } from './tools';
 
 
 const cardinalAddress = ref<BitcoinAddress>({address: '', publicKey: ''});
@@ -98,17 +99,24 @@ export const leatherSignPsbt = async (psbt: string, vIn: InputToSign[], broadcas
     inputs[v.address] = v.signingIndexes;
   }
   const response = await provider.request('signPsbt', {
-      psbt,
-      broadcast: broadcast, 
+      hex: convertPsbt(psbt, 'hex'),
+      broadcast: broadcast,
       signInputs: inputs,
   });
 
-  return (
-    response.result as {
-      status: string;
-      result: SignPsbtResult;
-    }
-  ).result;
+  const result = response.result as {hex:string, txid: string};
+
+  return {
+    psbt: convertPsbt(result.hex, "base64"),
+    txid: result.txid,
+  }
+
+  // return (
+  //   response.result as {
+  //     status: string;
+  //     result: SignPsbtResult;
+  //   }
+  // ).result;
 };
 
 export const leatherSendBtc = async (recipients: {address: string; amount: number}[]): Promise<string> => {

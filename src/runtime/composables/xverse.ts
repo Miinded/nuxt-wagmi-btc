@@ -35,14 +35,14 @@ export const xverseConnect = async () : Promise<WagmiBtcAddress > => {
   try {
     const response =  await request('wallet_connect', {  message: 'Connect Xverse', addresses: [AddressPurpose.Payment, AddressPurpose.Ordinals], }, PROVIDER_ID);
     if (response.status === 'success') {
-      const result = response.result; 
+      const result = response.result;
       if (result.addresses && result.addresses.length > 0) {
         const cardinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Payment) as BitcoinAddress;
         cardinalAddress.value = { address: cardinal.address || '', publicKey: cardinal.publicKey || ''};
         const ordinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Ordinals) as BitcoinAddress;
         ordinalAddress.value = { address: ordinal.address || '', publicKey: ordinal.publicKey || ''};
       }
-      
+
     } else {
       if (response.error.code === -32000) {
         throw new UserRejectedRequestError(new Error('User rejected the request'));
@@ -78,8 +78,8 @@ export const xverseSignMessage = async (message: string| JSON) => {
   // }
   const addresses = await xverseAddresses();
 
-  const response = await request('signMessage', { 
-    address: addresses!.payment.address, 
+  const response = await request('signMessage', {
+    address: addresses!.payment.address,
     message: JSON.stringify(message),
   }, PROVIDER_ID);
 
@@ -101,7 +101,7 @@ export const xverseSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast
   }
   const response = await request('signPsbt', {
       psbt,
-      broadcast: broadcast, 
+      broadcast: broadcast,
       signInputs: inputs,
   }, PROVIDER_ID);
 
