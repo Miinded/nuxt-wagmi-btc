@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.13
+
+[compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.12...v0.1.13)
+
+### 🩹 Fixes
+
+- ConvertPsbt ([3eef1e8](https://gitlab.com/miinded/nuxt-wagmi-btc/commit/3eef1e8))
+
+### ❤️ Contributors
+
+- EKCO <ekco@miinded.com>
+
 ## v0.1.12
 
 [compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.11...v0.1.12)
