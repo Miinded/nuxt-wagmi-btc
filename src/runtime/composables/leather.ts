@@ -99,7 +99,7 @@ export const leatherSignPsbt = async (psbt: string, vIn: InputToSign[], broadcas
     inputs[v.address] = v.signingIndexes;
   }
   const response = await provider.request('signPsbt', {
-      hex: convertPsbt(psbt, 'hex'),
+      hex: convertPsbt(psbt, 'hex', true),
       broadcast: broadcast,
       signInputs: inputs,
   });
@@ -107,7 +107,7 @@ export const leatherSignPsbt = async (psbt: string, vIn: InputToSign[], broadcas
   const result = response.result as {hex:string, txid: string};
 
   return {
-    psbt: convertPsbt(result.hex, "base64"),
+    psbt: convertPsbt(result.hex, 'base64', true),
     txid: result.txid,
   }
 

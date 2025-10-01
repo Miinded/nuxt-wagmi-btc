@@ -79,7 +79,7 @@ export const phantomSignMessage = async (message: string| JSON): Promise<string>
 
 export const phantomSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast: boolean): Promise<SignPsbtResult> => {
   const provider = phantomProvider();
-  const psbtHex = convertPsbt(psbt, 'hex');
+  const psbtHex = convertPsbt(psbt, 'hex', true);
 
   const fromHexString = (hexString: string) =>{
     const m = hexString.match(/.{1,2}/g);

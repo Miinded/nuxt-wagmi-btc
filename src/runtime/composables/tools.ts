@@ -12,11 +12,11 @@ export const isBase64 = (str: string): boolean => {
   return /^[A-Z0-9+/]*={0,2}$/i.test(str);
 };
 
-export const convertPsbt = (psbt: string, format: 'base64' | 'hex'): string => {
+export const convertPsbt = (psbt: string, format: 'base64' | 'hex', force = false): string => {
   if (format === "hex") {
-    return isHex(psbt) ? psbt: (Buffer.from(psbt, 'base64')).toString('hex');
+    return isHex(psbt) && !force ? psbt: (Buffer.from(psbt, 'base64')).toString('hex');
   }
-  return isBase64(psbt) ? psbt: (Buffer.from(psbt, 'hex')).toString('base64');
+  return isBase64(psbt) && !force ? psbt: (Buffer.from(psbt, 'hex')).toString('base64');
 }
 
 export const broadcastTx = async (txHex: string) => {

@@ -53,7 +53,7 @@ export const unisatSignMessage = async (message: string| JSON): Promise<string> 
 
 export const unisatSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast: boolean): Promise<SignPsbtResult> => {
   const provider = unisatProvider();
-  const psbtHex = convertPsbt(psbt, 'hex');
+  const psbtHex = convertPsbt(psbt, 'hex', true);
   const toSignInputs: {index: number; address: string}[] = [];
   for(const v of vIn){
     for(const i of v.signingIndexes){
@@ -71,7 +71,7 @@ export const unisatSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast
   });
 
   const response =  {
-    psbt: convertPsbt(resturnPsbtHex, 'base64'),
+    psbt: convertPsbt(resturnPsbtHex, 'base64', true),
   } as SignPsbtResult;
 
   if(broadcast){
