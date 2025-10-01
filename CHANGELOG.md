@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.1.10
+
+[compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.9...v0.1.10)
+
+### 🩹 Fixes
+
+- Leather ([7f679ba](https://gitlab.com/miinded/nuxt-wagmi-btc/commit/7f679ba))
+
+### ❤️ Contributors
+
+- EKCO <ekco@miinded.com>
+
 ## v0.1.9
 
 [compare changes](https://gitlab.com/miinded/nuxt-wagmi-btc/compare/v0.1.8...v0.1.9)
