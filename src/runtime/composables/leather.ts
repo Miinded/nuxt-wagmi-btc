@@ -122,7 +122,7 @@ export const leatherSignPsbt = async (psbt: string, vIn: InputToSign[], broadcas
 export const leatherSendBtc = async (recipients: {address: string; amount: number}[]): Promise<string> => {
   const provider = leatherProvider();
 
-  const response = await provider.request('sendTransfer', {
+  const response = await provider.request<SendTransferResult>('sendTransfer', {
     network: "mainnet",
     recipients: recipients.map(r => ({
       address: r.address,
@@ -130,10 +130,5 @@ export const leatherSendBtc = async (recipients: {address: string; amount: numbe
     }))
   });
 
-  return (
-    response.result as {
-      status: string;
-      result: SendTransferResult;
-    }
-  ).result.txid;
+  return response.result.txid;
 };
