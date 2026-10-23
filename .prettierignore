@@ -1,0 +1,7 @@
+dist
+.nuxt
+.output
+coverage
+node_modules
+pnpm-lock.yaml
+CHANGELOG.md

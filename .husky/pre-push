@@ -1,0 +1,2 @@
+pnpm deps:check
+pnpm test

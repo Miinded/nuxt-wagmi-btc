@@ -1,0 +1,52 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: main
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      # Major upgrades are done deliberately, not through Dependabot.
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+    groups:
+      nuxt:
+        patterns:
+          - nuxt
+          - '@nuxt/*'
+          - vue
+          - '@vue/*'
+          - vue-tsc
+      vitest:
+        patterns:
+          - vitest
+          - '@vitest/*'
+      tooling:
+        patterns:
+          - '@typescript-eslint/*'
+          - eslint*
+          - prettier
+          - typescript
+          - '@commitlint/*'
+          - lint-staged
+          - husky
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    target-branch: main
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    ignore:
+      # v7 drops the placeholder NODE_AUTH_TOKEN that the release .npmrc relies on.
+      - dependency-name: actions/setup-node
+        update-types: ['version-update:semver-major']
+      # v2 requires Changesets CLI v3.
+      - dependency-name: changesets/action
+        update-types: ['version-update:semver-major']
