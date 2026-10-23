@@ -19,6 +19,10 @@ on:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
+env:
+  # Hooks git inutiles en CI (le pre-push relançait les tests au push du tag de release)
+  HUSKY: 0
+
 jobs:
   release:
     name: Release
