@@ -1,11 +1,22 @@
 import { addImportsDir, addPlugin, createResolver, defineNuxtModule } from '@nuxt/kit';
-import type { BitcoinConnector, ModuleOptions } from './types/wagmi-btc';
-export type { BitcoinConnector, BitcoinProvider, ModuleOptions } from './types/wagmi-btc';
+import type { ModuleOptions } from './runtime/types/wagmi-btc';
+
+export type {
+  BitcoinAddress,
+  BitcoinConnector,
+  BitcoinProvider,
+  BitcoinRecipient,
+  ModuleOptions,
+  WagmiBtcAddress,
+} from './runtime/types/wagmi-btc';
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
     name: 'wagmi-btc',
     configKey: 'wagmiBtc',
+    compatibility: {
+      nuxt: '>=4.0.0',
+    },
   },
   // Default configuration options of the Nuxt module
   defaults: {
@@ -41,12 +52,7 @@ export default defineNuxtModule<ModuleOptions>({
   setup(_options, _nuxt) {
     const resolver = createResolver(import.meta.url);
 
-    _nuxt.hook('prepare:types', ({ references }) => {
-      references.push({ types: 'wagmi-btc' });
-    });
-
     addPlugin(resolver.resolve('runtime/plugins/bitcoinjs.client'));
-
 
     addImportsDir(resolver.resolve('runtime/composables'));
 
@@ -58,15 +64,11 @@ export default defineNuxtModule<ModuleOptions>({
       });
     });
 
-    for (const index in _options.connectors) {
-      const provider = _options.connectors[index] as BitcoinConnector;
-      if (provider.icon) {
-        const icon = provider.icon.replace(':iconPath', _options.iconPath);
-        if (provider.icon !== icon) {
-          _options.connectors[index].icon = icon;
-        }
-      }
-    }
+    // `:iconPath` dans l'icône d'un connecteur est remplacé par l'option iconPath
+    _options.connectors = _options.connectors.map((connector) => ({
+      ...connector,
+      icon: connector.icon?.replace(':iconPath', _options.iconPath),
+    }));
 
     // Ajoutez les options de configuration au runtime config
     _nuxt.options.runtimeConfig.app.wagmiBtc = _options;

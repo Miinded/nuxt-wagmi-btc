@@ -1,7 +1,16 @@
-
-import { getProviderOrThrow, type Recipient, type SerializedRecipient, type SerializedSendBtcTransactionPayload } from 'sats-connect';
+import {
+  getProviderOrThrow,
+  type Recipient,
+  type SerializedRecipient,
+  type SerializedSendBtcTransactionPayload,
+} from 'sats-connect';
 import { createUnsecuredToken, type Json } from 'jsontokens';
-import type { BitcoinAddress, SendBtcTransactionOptions, SignMessageOptions, SignTransactionOptions } from '../../types/wagmi-btc';
+import type {
+  BitcoinAddress,
+  SendBtcTransactionOptions,
+  SignMessageOptions,
+  SignTransactionOptions,
+} from '../types/wagmi-btc';
 import { useNuxtApp } from '#app';
 
 export const isHex = (str: string): boolean => {
@@ -12,18 +21,24 @@ export const isBase64 = (str: string): boolean => {
   return /^[A-Z0-9+/]*={0,2}$/i.test(str);
 };
 
-export const convertPsbt = (psbt: string, format: 'base64' | 'hex', force = false): string => {
-  if (format === "hex") {
-    return isHex(psbt) && !force ? psbt: (Buffer.from(psbt, 'base64')).toString('hex');
+/**
+ * Convertit une PSBT en hexadécimal ou en base64, quel que soit son format d'entrée.
+ * Le format est détecté sur le contenu : toute chaîne hexadécimale est traitée comme de l'hex (une PSBT en
+ * base64 commence par « cHNidP » et n'est donc jamais purement hexadécimale).
+ * @param _force conservé pour compatibilité, sans effet depuis la 2.0
+ */
+export const convertPsbt = (psbt: string, format: 'base64' | 'hex', _force = false): string => {
+  if (format === 'hex') {
+    return isHex(psbt) ? psbt : Buffer.from(psbt, 'base64').toString('hex');
   }
-  return isBase64(psbt) && !force ? psbt: (Buffer.from(psbt, 'hex')).toString('base64');
-}
+  return isHex(psbt) ? Buffer.from(psbt, 'hex').toString('base64') : psbt;
+};
 
 export const broadcastTx = async (txHex: string) => {
   const response = await fetch('https://mempool.space/api/tx', {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: txHex
+    body: txHex,
   });
 
   if (!response.ok) {
@@ -33,7 +48,7 @@ export const broadcastTx = async (txHex: string) => {
   return await response.text();
 };
 
-export  const finalizeAndExtractTx = (signedPsbtBase64: string): string => {
+export const finalizeAndExtractTx = (signedPsbtBase64: string): string => {
   const { $bitcoin } = useNuxtApp();
   const psbt = ($bitcoin as any).Psbt.fromBase64(convertPsbt(signedPsbtBase64, 'base64'));
   psbt.finalizeAllInputs();
@@ -48,11 +63,7 @@ export const getUtxos = async (address: string) => {
   }
 
   const utxos = await response.json();
-  return utxos.map((utxo: {
-    txid: string;
-    vout: number;
-    value: number;
-  }) => ({
+  return utxos.map((utxo: { txid: string; vout: number; value: number }) => ({
     txid: utxo.txid,
     vout: utxo.vout,
     value: utxo.value, // Montant en satoshis
@@ -63,7 +74,11 @@ export const getUtxos = async (address: string) => {
   }[];
 };
 
-export const createPsbt = async (sender: BitcoinAddress, recipients: { address: string; amount: number }[], utxos: { txid: string; vout: number; value: number; }[]): Promise<string> => {
+export const createPsbt = async (
+  sender: BitcoinAddress,
+  recipients: { address: string; amount: number }[],
+  utxos: { txid: string; vout: number; value: number }[],
+): Promise<string> => {
   const { $bitcoin } = useNuxtApp();
   const psbt = new ($bitcoin as any).Psbt({ network: ($bitcoin as any).networks.bitcoin });
 
@@ -82,7 +97,7 @@ export const createPsbt = async (sender: BitcoinAddress, recipients: { address: 
 
   // Vérifier si le solde est suffisant
   if (totalInput < totalOutput + fee) {
-    throw new Error("There are insufficient funds to complete the transfer");
+    throw new Error('There are insufficient funds to complete the transfer');
   }
 
   // Ajouter les inputs (UTXOs du sender)
@@ -109,30 +124,34 @@ export const createPsbt = async (sender: BitcoinAddress, recipients: { address: 
   return e;
 };
 
-
 export const getAddressType = (address: string): string => {
-  if (address.startsWith("1")) return "P2PKH"; // (Legacy)
-  if (address.startsWith("3")) return "P2SH";// (Wrapped SegWit ou multisig)
-  if (address.startsWith("bc1q")) return address.length === 42 ? "P2WPKH" : "P2WSH";  // 42 caractères = P2WPKH, sinon P2WSH (multisig)
-  if (address.startsWith("bc1p")) return "P2TR"; // (Taproot - Bech32m)
-  throw new Error("Invalide address format");
+  if (address.startsWith('1')) return 'P2PKH'; // (Legacy)
+  if (address.startsWith('3')) return 'P2SH'; // (Wrapped SegWit ou multisig)
+  if (address.startsWith('bc1q')) return address.length === 42 ? 'P2WPKH' : 'P2WSH'; // 42 caractères = P2WPKH, sinon P2WSH (multisig)
+  if (address.startsWith('bc1p')) return 'P2TR'; // (Taproot - Bech32m)
+  throw new Error('Invalide address format');
 };
 
-export const estimateTxSize = (inputType: string, numInputs: number, numOutputs: number, outputType = "P2WPKH"): number => {
+export const estimateTxSize = (
+  inputType: string,
+  numInputs: number,
+  numOutputs: number,
+  outputType = 'P2WPKH',
+): number => {
   const inputSizes: { [key: string]: number } = {
-    "P2PKH": 148,
-    "P2SH-P2WPKH": 90,
-    "P2WPKH": 68,
-    "P2WSH": 100,
-    "P2TR": 34
+    P2PKH: 148,
+    'P2SH-P2WPKH': 90,
+    P2WPKH: 68,
+    P2WSH: 100,
+    P2TR: 34,
   };
 
   const outputSizes: { [key: string]: number } = {
-    "P2PKH": 34,
-    "P2SH": 34,
-    "P2WPKH": 31,
-    "P2WSH": 31,
-    "P2TR": 26
+    P2PKH: 34,
+    P2SH: 34,
+    P2WPKH: 31,
+    P2WSH: 31,
+    P2TR: 26,
   };
 
   const inputSize = inputSizes[inputType] || 0;
@@ -142,7 +161,7 @@ export const estimateTxSize = (inputType: string, numInputs: number, numOutputs:
 };
 
 export const getFeeRate = async (): Promise<number> => {
-  const response = await fetch("https://mempool.space/api/v1/fees/recommended");
+  const response = await fetch('https://mempool.space/api/v1/fees/recommended');
   const data = await response.json();
   return data.fastestFee; // Ex: 20 sat/vByte
 };
@@ -163,11 +182,7 @@ export const sendBtcTransaction = async (options: SendBtcTransactionOptions) => 
   if (!recipients || recipients.length === 0) {
     throw new Error('At least one recipient is required');
   }
-  if (
-    recipients.some(
-      (item: any) => typeof item.address !== 'string' || typeof item.amountSats !== 'bigint'
-    )
-  ) {
+  if (recipients.some((item: any) => typeof item.address !== 'string' || typeof item.amountSats !== 'bigint')) {
     throw new Error('Incorrect recipient format');
   }
   if (!senderAddress) {
@@ -186,9 +201,9 @@ export const sendBtcTransaction = async (options: SendBtcTransactionOptions) => 
     const response = await provider.sendBtcTransaction(request);
     options.onFinish?.(response);
   } catch (error) {
-    const anyError = (error as unknown as Error);
-    if(anyError.name){
-      if(["UserDeclinedError"].includes(anyError.name)){
+    const anyError = error as unknown as Error;
+    if (anyError.name) {
+      if (['UserDeclinedError'].includes(anyError.name)) {
         options.onCancel?.(anyError);
         return;
       }
@@ -214,11 +229,10 @@ export const signTransaction = async (options: SignTransactionOptions) => {
     const request = createUnsecuredToken(options.payload as unknown as Json);
     const response = await provider.signTransaction(request);
     options.onFinish?.(response);
-  }
-  catch (error) {
-    const anyError = (error as unknown as any);
-    if(anyError.name){
-      if(["UserDeclinedError"].includes(anyError.name)){
+  } catch (error) {
+    const anyError = error as unknown as any;
+    if (anyError.name) {
+      if (['UserDeclinedError'].includes(anyError.name)) {
         options.onCancel?.(anyError);
         return;
       }
@@ -245,9 +259,9 @@ export const signMessage = async (options: SignMessageOptions) => {
     const response = await provider.signMessage(request);
     options.onFinish?.(response);
   } catch (error) {
-    const anyError = (error as unknown as any);
-    if(anyError.name){
-      if(["UserDeclinedError"].includes(anyError.name)){
+    const anyError = error as unknown as any;
+    if (anyError.name) {
+      if (['UserDeclinedError'].includes(anyError.name)) {
         options.onCancel?.(anyError);
         return;
       }
@@ -271,8 +285,8 @@ export const base64ToUint8Array = (base64: string): Uint8Array => {
   }
 
   return uint8Array;
-}
+};
 
 export const Uint8ArrayToBase64 = (binary: Uint8Array): string => {
   return btoa(String.fromCharCode(...binary));
-}
+};

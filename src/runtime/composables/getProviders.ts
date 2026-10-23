@@ -1,9 +1,44 @@
-import type { BitcoinProvider } from '../../module';
-import { leatherAddresses, leatherConnect, leatherProvider, leatherSendBtc, leatherSignMessage, leatherSignPsbt } from './leather';
-import { magicEdenAddresses, magicEdenConnect, magicEdenProvider, magicEdenSendBtc, magicEdenSignMessage, magicEdenSignPsbt } from './magicEden';
-import { phantomAddresses, phantomConnect, phantomProvider, phantomSendBtc, phantomSignMessage, phantomSignPsbt } from './phantom';
-import { unisatAddresses, unisatConnect, unisatProvider, unisatSendBtc, unisatSignMessage, unisatSignPsbt } from './unisat';
-import { xverseAddresses, xverseConnect, xverseProvider, xverseSendBtc, xverseSignMessage, xverseSignPsbt } from './xverse';
+import type { BitcoinProvider } from '../types/wagmi-btc';
+import {
+  leatherAddresses,
+  leatherConnect,
+  leatherProvider,
+  leatherSendBtc,
+  leatherSignMessage,
+  leatherSignPsbt,
+} from './leather';
+import {
+  magicEdenAddresses,
+  magicEdenConnect,
+  magicEdenProvider,
+  magicEdenSendBtc,
+  magicEdenSignMessage,
+  magicEdenSignPsbt,
+} from './magicEden';
+import {
+  phantomAddresses,
+  phantomConnect,
+  phantomProvider,
+  phantomSendBtc,
+  phantomSignMessage,
+  phantomSignPsbt,
+} from './phantom';
+import {
+  unisatAddresses,
+  unisatConnect,
+  unisatProvider,
+  unisatSendBtc,
+  unisatSignMessage,
+  unisatSignPsbt,
+} from './unisat';
+import {
+  xverseAddresses,
+  xverseConnect,
+  xverseProvider,
+  xverseSendBtc,
+  xverseSignMessage,
+  xverseSignPsbt,
+} from './xverse';
 
 export const getProviders = (): BitcoinProvider[] => {
   return [

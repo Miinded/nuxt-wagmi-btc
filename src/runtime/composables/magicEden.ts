@@ -1,26 +1,25 @@
-import type { Address, BitcoinProvider, InputToSign, SignPsbtResult, SignTransactionResponse} from "sats-connect";
-import { AddressPurpose, BitcoinNetworkType, } from "sats-connect";
-import { UserRejectedRequestError } from "viem";
+import type { Address, BitcoinProvider, InputToSign, SignPsbtResult, SignTransactionResponse } from 'sats-connect';
+import { AddressPurpose, BitcoinNetworkType } from 'sats-connect';
+import { UserRejectedRequestError } from 'viem';
 import { createUnsecuredToken } from 'jsontokens';
-import type { BitcoinAddress, WagmiBtcAddress } from "../../types/wagmi-btc";
-import { convertPsbt, sendBtcTransaction, signMessage, signTransaction } from "./tools";
-import { ref } from "vue";
+import type { BitcoinAddress, WagmiBtcAddress } from '../types/wagmi-btc';
+import { convertPsbt, sendBtcTransaction, signMessage, signTransaction } from './tools';
+import { ref } from 'vue';
 
-const cardinalAddress = ref<BitcoinAddress>({address: '', publicKey: ''});
-const ordinalAddress = ref<BitcoinAddress>({address: '', publicKey: ''});
+const cardinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
+const ordinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
 
 export const magicEdenProvider = () => {
   let magicEdenProvider = null;
   if ('magicEden' in window) {
     const anyWindow: any = window;
-    if (!anyWindow.magicEden.bitcoin || !anyWindow.magicEden.bitcoin.isMagicEden)
-    {
+    if (!anyWindow.magicEden.bitcoin || !anyWindow.magicEden.bitcoin.isMagicEden) {
       return;
     }
     const provider = anyWindow.magicEden.bitcoin;
     if (provider) {
       magicEdenProvider = provider;
-    }else {
+    } else {
       window.open('https://wallet.magiceden.io', '_blank');
     }
   }
@@ -49,19 +48,20 @@ export const magicEdenConnect = async (): Promise<WagmiBtcAddress> => {
 
   const provider = magicEdenProvider()!;
   try {
-    const result = await provider.connect(createUnsecuredToken({
-      message: 'Connect Magic Eden',
-      purposes: [AddressPurpose.Payment, AddressPurpose.Ordinals],
-      network: { type: BitcoinNetworkType.Mainnet}
-    }));
+    const result = await provider.connect(
+      createUnsecuredToken({
+        message: 'Connect Magic Eden',
+        purposes: [AddressPurpose.Payment, AddressPurpose.Ordinals],
+        network: { type: BitcoinNetworkType.Mainnet },
+      }),
+    );
 
     if (result.addresses && result.addresses.length > 0) {
-      const cardinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Payment)!;
-      cardinalAddress.value = { address: cardinal.address || '', publicKey: cardinal.publicKey || ''};
-      const ordinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Ordinals)!;
-      ordinalAddress.value = { address: ordinal.address || '', publicKey: ordinal.publicKey || ''};
+      const cardinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Payment);
+      cardinalAddress.value = { address: cardinal?.address || '', publicKey: cardinal?.publicKey || '' };
+      const ordinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Ordinals);
+      ordinalAddress.value = { address: ordinal?.address || '', publicKey: ordinal?.publicKey || '' };
     }
-
   } catch (e) {
     console.error(e);
     if ((e as any).code === 4001) {
@@ -77,8 +77,8 @@ export const magicEdenConnect = async (): Promise<WagmiBtcAddress> => {
   };
 };
 
-export const magicEdenAddresses = async(): Promise<WagmiBtcAddress> => {
-  if (cardinalAddress.value && ordinalAddress.value) {
+export const magicEdenAddresses = async (): Promise<WagmiBtcAddress> => {
+  if (cardinalAddress.value.address !== '' && ordinalAddress.value.address !== '') {
     return {
       payment: cardinalAddress.value,
       ordinal: ordinalAddress.value,
@@ -88,7 +88,7 @@ export const magicEdenAddresses = async(): Promise<WagmiBtcAddress> => {
   }
 };
 
-export const magicEdenSignMessage = async (message: string| JSON): Promise<string> => {
+export const magicEdenSignMessage = async (message: string | JSON): Promise<string> => {
   const provider = magicEdenProvider();
   const addresses = await magicEdenAddresses();
   const signature = await new Promise((resolve, reject) => {
@@ -102,20 +102,24 @@ export const magicEdenSignMessage = async (message: string| JSON): Promise<strin
         message: JSON.stringify(message),
       },
       onFinish: (response) => {
-        resolve(response)
+        resolve(response);
       },
       onCancel: (error: Error) => {
-        reject(error)
+        reject(error);
       },
       onError: (error: Error) => {
-        reject(error)
+        reject(error);
       },
     });
   });
   return signature as string;
 };
 
-export const magicEdenSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast: boolean): Promise<SignPsbtResult> => {
+export const magicEdenSignPsbt = async (
+  psbt: string,
+  vIn: InputToSign[],
+  broadcast: boolean,
+): Promise<SignPsbtResult> => {
   const provider = magicEdenProvider();
   const signature = await new Promise((resolve, reject) => {
     signTransaction({
@@ -131,25 +135,25 @@ export const magicEdenSignPsbt = async (psbt: string, vIn: InputToSign[], broadc
       },
       onFinish: (response: SignTransactionResponse) => {
         resolve({
-           psbt: response.psbtBase64,
-           txid: response?.txId
-        } as SignPsbtResult)
+          psbt: response.psbtBase64,
+          txid: response?.txId,
+        } as SignPsbtResult);
       },
       onCancel: (error: Error) => {
-        reject(error)
+        reject(error);
       },
       onError: (error: Error) => {
-        reject(error)
+        reject(error);
       },
     });
   });
   return signature as SignPsbtResult;
 };
 
-export const magicEdenSendBtc = async (recipients: {address: string; amount: number}[]): Promise<string> => {
-  const tos = recipients.map(r => ({
+export const magicEdenSendBtc = async (recipients: { address: string; amount: number }[]): Promise<string> => {
+  const tos = recipients.map((r) => ({
     address: r.address,
-    amountSats: BigInt(r.amount)
+    amountSats: BigInt(r.amount),
   }));
 
   const provider = magicEdenProvider();
@@ -163,16 +167,16 @@ export const magicEdenSendBtc = async (recipients: {address: string; amount: num
           type: BitcoinNetworkType.Mainnet,
         },
         senderAddress: addresses!.payment.address,
-        recipients: tos
+        recipients: tos,
       },
       onFinish: (response) => {
-        resolve(response)
+        resolve(response);
       },
       onCancel: (error: Error) => {
-        reject(error)
+        reject(error);
       },
       onError: (error: Error) => {
-        reject(error)
+        reject(error);
       },
     });
   });

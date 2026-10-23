@@ -1,7 +1,5 @@
-import WagmiBtc from '../../../src/module'
+import WagmiBtc from '../../../src/module';
 
 export default defineNuxtConfig({
-  modules: [
-    WagmiBtc,
-  ],
-})
+  modules: [WagmiBtc],
+});

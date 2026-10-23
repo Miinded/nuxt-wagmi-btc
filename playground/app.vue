@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BitcoinConnector, BitcoinProvider } from '../src/types/wagmi-btc';
+import type { BitcoinConnector, BitcoinProvider } from '../src/runtime/types/wagmi-btc';
 
 const a = getConnectors();
 const provider = ref<BitcoinProvider>();
@@ -30,32 +30,36 @@ const connectToBtcProvider = async (x: BitcoinConnector) => {
   }
 };
 
-const getAddresses = async() => {
+const getAddresses = async () => {
   console.log(await provider.value!.getAddresses());
-}
+};
 
-const sign = async() => {
-  const r = await provider.value!.signature({ "test": "123456"});
+const sign = async () => {
+  const r = await provider.value!.signature({ test: '123456' });
   console.log(r);
-}
+};
 
-
-const sendBtc =  async() => {
+const sendBtc = async () => {
   const addresses = await provider.value!.getAddresses();
-  const r = await provider.value!.sendBtc([{ address: addresses.payment.address, amount: 100000000}]);
+  const r = await provider.value!.sendBtc([{ address: addresses.payment.address, amount: 100000000 }]);
   console.log(r);
-}
-
+};
 </script>
 <template>
   <div>
     Nuxt module playground!
 
-    <button v-for="x in a" :key="x.name" type="button" class="flex justify-start h-auto px-1 py-1" @click="connectToBtcProvider(x)">
+    <button
+      v-for="x in a"
+      :key="x.name"
+      type="button"
+      class="flex justify-start h-auto px-1 py-1"
+      @click="connectToBtcProvider(x)"
+    >
       <img :src="x.icon" alt="sd" />
       {{ x.name }}
     </button>
-    <br/>
+    <br />
     <button @click="getAddresses">Adresses</button>
     <button @click="sign">Sign message</button>
     <button @click="sendBtc">sendBtc</button>
