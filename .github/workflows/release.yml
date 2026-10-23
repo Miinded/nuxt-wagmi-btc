@@ -70,4 +70,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # npm lit le .npmrc de setup-node (NPM_CONFIG_USERCONFIG), pas celui écrit par changesets :
+          # le jeton doit passer par NODE_AUTH_TOKEN. Sans secret (trusted publishing), npm utilise l'OIDC.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
