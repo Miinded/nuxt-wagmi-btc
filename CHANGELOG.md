@@ -10,13 +10,25 @@
 - Types live in `runtime/types` and are exported from the package root (`BitcoinAddress`, `BitcoinRecipient` and
   `WagmiBtcAddress` added).
 - `xverse.connect()` rejects on user refusal or wallet errors instead of resolving with empty addresses.
+- Phantom rejects on networks other than mainnet.
+- `estimateTxSize` uses corrected virtual sizes and throws on unknown input or output types.
+- `phantomProvider()` no longer opens a window; `magicEdenProvider()` returns `null` when unavailable.
 
 ### Minor Changes
 
+- `network` option (`mainnet`, `testnet`, `testnet4`, `signet`) propagated to sats-connect, Leather, Unisat,
+  `bitcoinjs-lib` and mempool.space, with an optional `mempoolApiUrl`.
+- `disconnect()` on every provider; Xverse and Magic Eden forget their addresses on account or network change.
+- `estimateTxVsize(inputType, numInputs, outputTypes)` and `getTxHex(txid)` helpers.
 - `convertPsbt` detects the input format (hex or base64); its `force` argument has no effect.
 
 ### Patch Changes
 
+- Taproot outputs no longer fail with « No ECC Library provided »: the client plugin initialises
+  `@bitcoinerlab/secp256k1` (pure JavaScript) in `bitcoinjs-lib`.
+- `createPsbt` describes every input (`witnessUtxo`, `tapInternalKey`, `redeemScript`, `nonWitnessUtxo`) so wallets can
+  sign it, and leaves change below the dust limit to the fee.
+- Fees use the virtual size of each input and output type (P2TR inputs were 34 vbytes, P2SH inputs 0).
 - `getAddresses()` of Xverse, Leather and Magic Eden connects when no address is known yet.
 - A wallet without a payment or ordinals address no longer crashes `connect()`.
 - `unisatSendBtc` no longer empties the recipients array it receives.

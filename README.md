@@ -16,7 +16,10 @@ Unisat.
 - One interface per wallet: connect, payment and ordinals addresses, message signing, PSBT signing (with optional
   broadcast) and BTC transfers.
 - Configurable list of connectors, with wallet icons served by the module.
-- `bitcoinjs-lib` provided to the client as `$bitcoin`.
+- **Mainnet, testnet, testnet4 and signet**, propagated to the wallets, `bitcoinjs-lib` and mempool.space.
+- `bitcoinjs-lib` provided to the client as `$bitcoin`, with a pure JavaScript ECC library initialised for Taproot.
+- Transactions built with complete inputs (`witnessUtxo`, `tapInternalKey`, `redeemScript` or `nonWitnessUtxo`) and fees
+  computed from the virtual size of each input and output type.
 - PSBT helpers that accept hex or base64 input.
 
 ## Requirements
@@ -54,6 +57,8 @@ export default defineNuxtConfig({
   },
   wagmiBtc: {
     // optional — defaults shown
+    network: 'mainnet', // 'mainnet' | 'testnet' | 'testnet4' | 'signet'
+    // mempoolApiUrl: 'https://mempool.example.com/signet/api', // defaults to mempool.space for the network
     iconPath: '/icon',
     connectors: [
       { id: 'magicEden', name: 'Magic Eden', icon: ':iconPath/magiceden-icon.png' },
@@ -67,6 +72,20 @@ export default defineNuxtConfig({
 ```
 
 `:iconPath` in a connector icon is replaced by `iconPath`. The module serves its icons under `/icon/`.
+
+### Networks
+
+`network` selects the Bitcoin network for the whole module:
+
+| `network`  | Wallets (sats-connect / Leather / Unisat)   | `bitcoinjs-lib`    | mempool.space API                    |
+| ---------- | ------------------------------------------- | ------------------ | ------------------------------------ |
+| `mainnet`  | `Mainnet` / `mainnet` / `BITCOIN_MAINNET`   | `networks.bitcoin` | `https://mempool.space/api`          |
+| `testnet`  | `Testnet` / `testnet` / `BITCOIN_TESTNET`   | `networks.testnet` | `https://mempool.space/testnet/api`  |
+| `testnet4` | `Testnet4` / `testnet` / `BITCOIN_TESTNET4` | `networks.testnet` | `https://mempool.space/testnet4/api` |
+| `signet`   | `Signet` / `signet` / `BITCOIN_SIGNET`      | `networks.testnet` | `https://mempool.space/signet/api`   |
+
+Xverse and Magic Eden receive the network in their requests, Unisat is switched to it on `connect()`, Leather receives
+it when signing and sending. Phantom only supports mainnet: its methods reject on any other network.
 
 ## Usage
 
@@ -130,20 +149,28 @@ result.txid; // set when broadcast
 | `signature(message)`                     | Signs `JSON.stringify(message)` with the payment address            |
 | `signaturePsbt(psbt, inputs, broadcast)` | Signs a PSBT; `inputs` lists `{ address, signingIndexes }`          |
 | `sendBtc(recipients)`                    | Sends BTC (`{ address, amount }` in satoshis) and returns the txid  |
+| `disconnect()`                           | Forgets the remembered addresses; the next `connect()` asks again   |
 
-Unisat sends to a single recipient; Phantom builds the transaction itself from the payment address UTXOs
-(mempool.space).
+Unisat sends to a single recipient. Phantom builds the transaction itself from the payment address UTXOs
+(mempool.space): native SegWit, Taproot, nested SegWit (`3…` / `2…`, public key required) and legacy senders are
+supported, P2WSH senders are not. The fee is `ceil(vsize × fastestFee)`, where `vsize` counts 148 / 91 / 68 / 57.5 vbytes
+per P2PKH / P2SH-P2WPKH / P2WPKH / P2TR input and 34 / 32 / 31 / 43 / 43 per P2PKH / P2SH / P2WPKH / P2WSH / P2TR
+output; change under 546 sats is left to the fee.
+
+Xverse, Leather and Magic Eden remember the connected addresses; they are forgotten on `disconnect()`, when Xverse
+reports an account or network change, and when Magic Eden reports an account change.
 
 ### Types
 
-`BitcoinAddress`, `BitcoinConnector`, `BitcoinProvider`, `BitcoinRecipient`, `ModuleOptions` and `WagmiBtcAddress` are
-exported from `@miinded/nuxt-wagmi-btc`.
+`BitcoinAddress`, `BitcoinConnector`, `BitcoinProvider`, `BitcoinRecipient`, `ModuleOptions`, `WagmiBtcAddress` and
+`WagmiBtcNetwork` are exported from `@miinded/nuxt-wagmi-btc`.
 
 ## Limitations
 
-- **Mainnet only**: networks are hard-coded to Bitcoin mainnet and mempool.space mainnet.
-- **Phantom transfers to Taproot (`bc1p…`) addresses** fail: `bitcoinjs-lib` needs an ECC library that the module does
-  not initialise.
+- **Phantom** is mainnet only (a wallet limitation).
+- **Leather** does not report account changes: call `disconnect()` when the user switches accounts.
+- The module injects a global `exports = {}` script on the client: some CommonJS dependencies of the wallet libraries
+  expect it in the browser.
 
 ## Migrating from 0.x
 
@@ -154,6 +181,11 @@ exported from `@miinded/nuxt-wagmi-btc`.
 - `getAddresses()` of Xverse, Leather and Magic Eden connects when no address is known yet (it used to return empty
   addresses).
 - `convertPsbt` detects the input format; its third argument (`force`) is ignored.
+- `estimateTxSize` uses corrected virtual sizes and throws on unknown types; prefer `estimateTxVsize`, which takes one
+  type per output.
+- `phantomProvider()` no longer opens the Phantom documentation when Bitcoin is not enabled
+  (`PHANTOM_BITCOIN_DOC_URL` is exported for apps that want to).
+- `magicEdenProvider()` returns `null` (not `undefined`) when the Magic Eden Bitcoin wallet is unavailable.
 - Published on npm: remove the GitLab registry lines (`@miinded:registry=…`) from your `.npmrc`.
 
 ## Contributing
