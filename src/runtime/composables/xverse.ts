@@ -1,17 +1,35 @@
 import type { Address, InputToSign, SendTransferResult, SignMessageResult, SignPsbtResult } from 'sats-connect';
-import { AddressPurpose, getProviderById, request } from 'sats-connect';
+import { AddressPurpose, addListener, getProviderById, request } from 'sats-connect';
 import { UserRejectedRequestError } from 'viem';
 import type { BitcoinAddress, WagmiBtcAddress } from '../types/wagmi-btc';
 import { ref } from 'vue';
+import { useBitcoinNetwork } from '../utils/network';
 
 const cardinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
 const ordinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
 const PROVIDER_ID = 'XverseProviders.BitcoinProvider';
+let unsubscribers: (() => void)[] = [];
+
+/** Oublie les adresses mémorisées et cesse d'écouter le portefeuille */
+export const xverseDisconnect = () => {
+  cardinalAddress.value = { address: '', publicKey: '' };
+  ordinalAddress.value = { address: '', publicKey: '' };
+  unsubscribers.forEach((unsubscribe) => unsubscribe());
+  unsubscribers = [];
+};
+
+// Un changement de compte ou de réseau dans Xverse invalide les adresses mémorisées
+const watchWallet = () => {
+  if (unsubscribers.length > 0) {
+    return;
+  }
+  unsubscribers = [
+    addListener('accountChange', xverseDisconnect, PROVIDER_ID),
+    addListener('networkChange', xverseDisconnect, PROVIDER_ID),
+  ];
+};
 
 export const xverseProvider = () => {
-  // if (!import.meta.client) {
-  //   return;
-  // }
   return getProviderById(PROVIDER_ID) as {
     request<T>(
       action?: string,
@@ -35,7 +53,11 @@ export const xverseConnect = async (): Promise<WagmiBtcAddress> => {
   try {
     const response = await request(
       'wallet_connect',
-      { message: 'Connect Xverse', addresses: [AddressPurpose.Payment, AddressPurpose.Ordinals] },
+      {
+        message: 'Connect Xverse',
+        addresses: [AddressPurpose.Payment, AddressPurpose.Ordinals],
+        network: useBitcoinNetwork().satsConnect,
+      },
       PROVIDER_ID,
     );
     if (response.status === 'success') {
@@ -46,6 +68,7 @@ export const xverseConnect = async (): Promise<WagmiBtcAddress> => {
         const ordinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Ordinals);
         ordinalAddress.value = { address: ordinal?.address || '', publicKey: ordinal?.publicKey || '' };
       }
+      watchWallet();
     } else {
       if (response.error.code === -32000) {
         throw new UserRejectedRequestError(new Error('User rejected the request'));
@@ -78,9 +101,6 @@ export const xverseAddresses = async (): Promise<WagmiBtcAddress> => {
 };
 
 export const xverseSignMessage = async (message: string | JSON) => {
-  // if (!import.meta.client) {
-  //   return;
-  // }
   const addresses = await xverseAddresses();
 
   const response = await request(
@@ -101,9 +121,6 @@ export const xverseSignMessage = async (message: string | JSON) => {
 };
 
 export const xverseSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast: boolean): Promise<SignPsbtResult> => {
-  // if (!import.meta.client) {
-  //   return;
-  // }
   const inputs: Record<string, number[]> = {};
   for (const v of vIn) {
     inputs[v.address] = v.signingIndexes;

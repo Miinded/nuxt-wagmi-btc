@@ -1,6 +1,7 @@
 import type { InputToSign, SignPsbtResult } from 'sats-connect';
 import type { BitcoinAddress, WagmiBtcAddress } from '../types/wagmi-btc';
 import { convertPsbt } from './tools';
+import { useBitcoinNetwork } from '../utils/network';
 
 export const unisatProvider = () => {
   let unisatProvider = null;
@@ -19,11 +20,14 @@ export const unisatProvider = () => {
     signPsbt(psbtHex: string, options?: { autoFinalized: boolean; toSignInputs: any[] }): Promise<string>;
     pushPsbt(signPsbtHex: string): Promise<string>;
     sendBitcoin(toAddress: string, satoshis: number, options?: any): Promise<string>;
+    switchChain?(chain: string): Promise<unknown>;
   };
 };
 
 export const unisatConnect = async (): Promise<WagmiBtcAddress> => {
   const provider = unisatProvider();
+  // aligne le portefeuille sur le réseau configuré (BITCOIN_MAINNET, BITCOIN_SIGNET…)
+  await provider.switchChain?.(useBitcoinNetwork().unisatChain);
   const accounts = await provider.requestAccounts();
   const publicKey = await provider.getPublicKey();
 
@@ -53,7 +57,7 @@ export const unisatSignMessage = async (message: string | JSON): Promise<string>
 
 export const unisatSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast: boolean): Promise<SignPsbtResult> => {
   const provider = unisatProvider();
-  const psbtHex = convertPsbt(psbt, 'hex', true);
+  const psbtHex = convertPsbt(psbt, 'hex');
   const toSignInputs: { index: number; address: string }[] = [];
   for (const v of vIn) {
     for (const i of v.signingIndexes) {
@@ -71,7 +75,7 @@ export const unisatSignPsbt = async (psbt: string, vIn: InputToSign[], broadcast
   });
 
   const response = {
-    psbt: convertPsbt(resturnPsbtHex, 'base64', true),
+    psbt: convertPsbt(resturnPsbtHex, 'base64'),
   } as SignPsbtResult;
 
   if (broadcast) {

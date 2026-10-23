@@ -1,19 +1,15 @@
 import { AddressPurpose, type InputToSign, type SignPsbtResult } from 'sats-connect';
 import { UserRejectedRequestError } from 'viem';
 import type { BitcoinAddress, WagmiBtcAddress } from '../types/wagmi-btc';
+import { useBitcoinNetwork } from '../utils/network';
 import { broadcastTx, convertPsbt, createPsbt, finalizeAndExtractTx, getUtxos, Uint8ArrayToBase64 } from './tools';
 
+/** Documentation à proposer quand Phantom est installé sans le support Bitcoin */
+export const PHANTOM_BITCOIN_DOC_URL = 'https://docs.phantom.com/bitcoin/integrating-phantom';
+
 export const phantomProvider = () => {
-  let localProvider = null;
-  if ('phantom' in window) {
-    const anyWindow = window;
-    const provider = (anyWindow.phantom as any)?.bitcoin;
-    if (provider) {
-      localProvider = provider;
-    } else {
-      window.open('https://docs.phantom.com/bitcoin/integrating-phantom', '_blank');
-    }
-  }
+  // pas d'effet de bord ici : c'est à l'application d'orienter l'utilisateur (PHANTOM_BITCOIN_DOC_URL)
+  const localProvider = 'phantom' in window ? ((window as any).phantom?.bitcoin ?? null) : null;
 
   return localProvider as {
     requestAccounts(): Promise<
@@ -48,6 +44,9 @@ export const phantomConnect = async (): Promise<WagmiBtcAddress> => {
 };
 
 export const phantomAddresses = async (): Promise<WagmiBtcAddress> => {
+  if (!useBitcoinNetwork().isMainnet) {
+    throw new Error('Phantom only supports Bitcoin mainnet');
+  }
   const provider = phantomProvider();
   const accounts = await provider.requestAccounts();
 
@@ -81,7 +80,7 @@ export const phantomSignPsbt = async (
   broadcast: boolean,
 ): Promise<SignPsbtResult> => {
   const provider = phantomProvider();
-  const psbtHex = convertPsbt(psbt, 'hex', true);
+  const psbtHex = convertPsbt(psbt, 'hex');
 
   const fromHexString = (hexString: string) => {
     const m = hexString.match(/.{1,2}/g);

@@ -45,6 +45,17 @@ describe('Unisat', () => {
     await expect(unisat.unisatAddresses()).resolves.toEqual({ payment: expected, ordinal: expected });
   });
 
+  it('aligne le portefeuille sur le réseau configuré avant la connexion', async () => {
+    const switchChain = vi.fn();
+    win.unisat = { ...provider, switchChain };
+    const { wagmiBtcOptions } = await import('../stubs/app');
+    wagmiBtcOptions.network = 'signet';
+
+    await unisat.unisatConnect();
+
+    expect(switchChain).toHaveBeenCalledWith('BITCOIN_SIGNET');
+  });
+
   it('signe le message sérialisé en BIP-322', async () => {
     await expect(unisat.unisatSignMessage({ nonce: 1 } as never)).resolves.toBe('signature');
     expect(provider.signMessage).toHaveBeenCalledWith('{"nonce":1}', 'bip322-simple');
@@ -137,6 +148,24 @@ describe('Leather', () => {
     });
   });
 
+  it('utilise le réseau configuré (testnet4 est vu comme testnet par Leather)', async () => {
+    const { wagmiBtcOptions } = await import('../stubs/app');
+    wagmiBtcOptions.network = 'signet';
+    await leather.leatherSendBtc([{ address: ORDINAL, amount: 1 }]);
+    expect(request.mock.calls[0]![1]).toMatchObject({ network: 'signet' });
+
+    wagmiBtcOptions.network = 'testnet4';
+    await leather.leatherSignPsbt(PSBT_BASE64, [], false);
+    expect(request.mock.calls[1]![1]).toMatchObject({ network: 'testnet' });
+  });
+
+  it('redemande les adresses après une déconnexion', async () => {
+    await leather.leatherConnect();
+    leather.leatherDisconnect();
+    await leather.leatherConnect();
+    expect(request).toHaveBeenCalledTimes(2);
+  });
+
   it('traduit un refus en UserRejectedRequestError', async () => {
     request.mockRejectedValueOnce(new Error('cancel'));
     await expect(leather.leatherConnect()).rejects.toBeInstanceOf(UserRejectedRequestError);
@@ -153,6 +182,7 @@ describe('Leather', () => {
       hex: PSBT_HEX,
       broadcast: true,
       signInputs: { [PAYMENT]: [0, 1] },
+      network: 'mainnet',
     });
 
     await expect(leather.leatherSendBtc([{ address: ORDINAL, amount: 1500 }])).resolves.toBe('txid-send');

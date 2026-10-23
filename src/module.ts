@@ -8,7 +8,10 @@ export type {
   BitcoinRecipient,
   ModuleOptions,
   WagmiBtcAddress,
+  WagmiBtcNetwork,
 } from './runtime/types/wagmi-btc';
+
+const NETWORKS = ['mainnet', 'testnet', 'testnet4', 'signet'];
 
 export default defineNuxtModule<ModuleOptions>({
   meta: {
@@ -21,6 +24,7 @@ export default defineNuxtModule<ModuleOptions>({
   // Default configuration options of the Nuxt module
   defaults: {
     iconPath: '/icon',
+    network: 'mainnet',
     connectors: [
       {
         id: 'magicEden',
@@ -51,6 +55,10 @@ export default defineNuxtModule<ModuleOptions>({
   },
   setup(_options, _nuxt) {
     const resolver = createResolver(import.meta.url);
+
+    if (!NETWORKS.includes(_options.network)) {
+      throw new Error(`[wagmi-btc] network must be one of ${NETWORKS.join(', ')} (received "${_options.network}")`);
+    }
 
     addPlugin(resolver.resolve('runtime/plugins/bitcoinjs.client'));
 

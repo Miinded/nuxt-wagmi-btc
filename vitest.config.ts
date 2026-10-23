@@ -26,7 +26,7 @@ export default defineConfig({
       reporter: ['text', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
       // Seuils minimaux : la CI échoue si la couverture régresse
-      thresholds: { statements: 95, branches: 85, functions: 90, lines: 95 },
+      thresholds: { statements: 97, branches: 88, functions: 92, lines: 97 },
     },
   },
 });

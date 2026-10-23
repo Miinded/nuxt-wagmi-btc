@@ -40,14 +40,26 @@ describe('Phantom', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renvoie null sans extension, et ouvre la documentation si Bitcoin n’est pas activé', () => {
+  it('renvoie null sans extension ou sans Bitcoin, sans ouvrir de fenêtre', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     delete win.phantom;
     expect(phantom.phantomProvider()).toBeNull();
 
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     win.phantom = {};
     expect(phantom.phantomProvider()).toBeNull();
-    expect(open).toHaveBeenCalledWith('https://docs.phantom.com/bitcoin/integrating-phantom', '_blank');
+    expect(open).not.toHaveBeenCalled();
+    expect(phantom.PHANTOM_BITCOIN_DOC_URL).toBe('https://docs.phantom.com/bitcoin/integrating-phantom');
+  });
+
+  it('refuse un réseau autre que mainnet (Phantom ne gère que le mainnet)', async () => {
+    const { wagmiBtcOptions } = await import('../stubs/app');
+    wagmiBtcOptions.network = 'signet';
+    try {
+      await expect(phantom.phantomAddresses()).rejects.toThrow('Phantom only supports Bitcoin mainnet');
+      expect(provider.requestAccounts).not.toHaveBeenCalled();
+    } finally {
+      wagmiBtcOptions.network = 'mainnet';
+    }
   });
 
   it('associe les comptes selon leur usage (paiement, ordinals)', async () => {
@@ -97,7 +109,7 @@ describe('Phantom', () => {
     });
     // createPsbt utilise le vrai bitcoinjs-lib ; la finalisation est simulée (PSBT non signée)
     nuxtApp.$bitcoin = {
-      networks: bitcoin.networks,
+      ...bitcoin,
       Psbt: Object.assign(
         function Psbt(options: object) {
           return new bitcoin.Psbt(options);

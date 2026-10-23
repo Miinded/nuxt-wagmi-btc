@@ -36,12 +36,21 @@ export interface BitcoinProvider {
   /** Envoie des BTC et renvoie l'identifiant de la transaction */
   sendBtc: (recipients: BitcoinRecipient[]) => Promise<string>;
   getAddresses: () => Promise<WagmiBtcAddress>;
+  /** Oublie les adresses mémorisées : le prochain connect() redemande le compte au portefeuille */
+  disconnect: () => void;
 }
+
+/** Réseau Bitcoin utilisé par les portefeuilles, bitcoinjs-lib et mempool.space */
+export type WagmiBtcNetwork = 'mainnet' | 'testnet' | 'testnet4' | 'signet';
 
 export interface ModuleOptions {
   /** Préfixe public des icônes servies par le module */
   iconPath: string;
   connectors: BitcoinConnector[];
+  /** Réseau Bitcoin (défaut : mainnet) */
+  network: WagmiBtcNetwork;
+  /** API mempool.space (UTXO, frais, diffusion) ; défaut : celle du réseau choisi */
+  mempoolApiUrl?: string;
 }
 
 export type BitcoinAddress = Pick<Address, 'address' | 'publicKey'>;

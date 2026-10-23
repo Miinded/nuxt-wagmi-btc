@@ -12,8 +12,20 @@ describe('portefeuilles', () => {
     const providers = getProviders();
 
     expect(providers.map((p) => p.id)).toEqual(['magicEden', 'leather', 'xverse', 'phantom', 'unisat']);
+    // seuls Phantom et Unisat n'ont rien à oublier : chaque appel interroge le portefeuille
+    for (const id of ['unisat', 'phantom']) {
+      expect(() => providers.find((p) => p.id === id)!.disconnect()).not.toThrow();
+    }
     for (const provider of providers) {
-      for (const method of ['provider', 'connect', 'signature', 'signaturePsbt', 'sendBtc', 'getAddresses'] as const) {
+      for (const method of [
+        'provider',
+        'connect',
+        'signature',
+        'signaturePsbt',
+        'sendBtc',
+        'getAddresses',
+        'disconnect',
+      ] as const) {
         expect(typeof provider[method]).toBe('function');
       }
     }
@@ -31,7 +43,7 @@ describe('portefeuilles', () => {
 });
 
 describe('plugin bitcoinjs.client', () => {
-  it('fournit bitcoinjs-lib comme $bitcoin côté client', async () => {
+  it('fournit bitcoinjs-lib comme $bitcoin côté client, avec l’ECC initialisée pour Taproot', async () => {
     await (plugin as unknown as (app: typeof nuxtApp) => Promise<void>)(nuxtApp);
 
     expect(useHead).toHaveBeenCalledWith({
@@ -40,5 +52,11 @@ describe('plugin bitcoinjs.client', () => {
     const [name, provided] = nuxtApp.provide.mock.calls[0]!;
     expect(name).toBe('bitcoin');
     expect((provided as typeof bitcoinjs).Psbt).toBe(bitcoinjs.Psbt);
+
+    // sans initEccLib, une sortie Taproot lève « No ECC Library provided »
+    const psbt = new bitcoinjs.Psbt();
+    expect(() =>
+      psbt.addOutput({ address: 'bc1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rusxg3297', value: 1000 }),
+    ).not.toThrow();
   });
 });

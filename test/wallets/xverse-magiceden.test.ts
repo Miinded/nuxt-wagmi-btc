@@ -16,10 +16,18 @@ const connected = {
 
 const satsRequest = vi.fn();
 const getProviderById = vi.fn(() => ({ request: vi.fn() }));
+// écouteurs Xverse : on garde les callbacks pour simuler un changement de compte
+const listeners = new Map<string, () => void>();
+const unsubscribe = vi.fn();
+const addListener = vi.fn((event: string, cb: () => void) => {
+  listeners.set(event, cb);
+  return unsubscribe;
+});
 vi.mock('sats-connect', async (importOriginal) => ({
   ...(await importOriginal<typeof import('sats-connect')>()),
   request: satsRequest,
   getProviderById,
+  addListener,
 }));
 
 const win = window as unknown as Record<string, unknown>;
@@ -30,6 +38,8 @@ describe('Xverse', () => {
   beforeEach(async () => {
     vi.resetModules();
     satsRequest.mockReset();
+    unsubscribe.mockReset();
+    listeners.clear();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     xverse = await import('../../src/runtime/composables/xverse');
   });
@@ -51,6 +61,31 @@ describe('Xverse', () => {
   it('se connecte quand on demande les adresses sans connexion préalable', async () => {
     satsRequest.mockResolvedValue({ status: 'success', result: { addresses: walletAddresses } });
     await expect(xverse.xverseAddresses()).resolves.toEqual(connected);
+  });
+
+  it('demande le réseau configuré à la connexion', async () => {
+    const { wagmiBtcOptions } = await import('../stubs/app');
+    wagmiBtcOptions.network = 'signet';
+    satsRequest.mockResolvedValue({ status: 'success', result: { addresses: walletAddresses } });
+
+    await xverse.xverseConnect();
+
+    expect(satsRequest.mock.calls[0]![1]).toMatchObject({ network: 'Signet' });
+  });
+
+  it('oublie les adresses quand le compte ou le réseau change, ou à la déconnexion', async () => {
+    satsRequest.mockResolvedValue({ status: 'success', result: { addresses: walletAddresses } });
+    await xverse.xverseConnect();
+    expect([...listeners.keys()].sort()).toEqual(['accountChange', 'networkChange']);
+
+    listeners.get('accountChange')!();
+    expect(unsubscribe).toHaveBeenCalledTimes(2);
+    await xverse.xverseConnect();
+    expect(satsRequest).toHaveBeenCalledTimes(2);
+
+    xverse.xverseDisconnect();
+    await xverse.xverseAddresses();
+    expect(satsRequest).toHaveBeenCalledTimes(3);
   });
 
   it('propage le refus de l’utilisateur et les erreurs du portefeuille', async () => {
@@ -121,11 +156,47 @@ describe('Magic Eden', () => {
     delete win.magicEden;
   });
 
-  it('ignore un objet magicEden qui n’est pas le portefeuille Bitcoin', () => {
+  it('renvoie null sans portefeuille Bitcoin Magic Eden, sans ouvrir de fenêtre', () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     win.magicEden = { bitcoin: { isMagicEden: false } };
-    expect(magicEden.magicEdenProvider()).toBeUndefined();
+    expect(magicEden.magicEdenProvider()).toBeNull();
+    win.magicEden = {};
+    expect(magicEden.magicEdenProvider()).toBeNull();
     delete win.magicEden;
     expect(magicEden.magicEdenProvider()).toBeNull();
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it('transmet le réseau configuré au portefeuille', async () => {
+    const { wagmiBtcOptions } = await import('../stubs/app');
+    wagmiBtcOptions.network = 'testnet';
+    const decode = (token: string) => JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString());
+
+    await magicEden.magicEdenConnect();
+    await magicEden.magicEdenSignMessage('x' as never);
+
+    expect(decode((provider.connect as ReturnType<typeof vi.fn>).mock.calls[0]![0]).network).toEqual({
+      type: 'Testnet',
+    });
+    expect(decode((provider.signMessage as ReturnType<typeof vi.fn>).mock.calls[0]![0]).network).toEqual({
+      type: 'Testnet',
+    });
+  });
+
+  it('oublie les adresses quand le compte change, ou à la déconnexion', async () => {
+    const on = vi.fn();
+    provider.on = on;
+    await magicEden.magicEdenConnect();
+    expect(on).toHaveBeenCalledWith('accountsChanged', magicEden.magicEdenDisconnect);
+
+    on.mock.calls[0]![1]();
+    await magicEden.magicEdenConnect();
+    expect(provider.connect).toHaveBeenCalledTimes(2);
+    expect(on).toHaveBeenCalledTimes(1);
+
+    magicEden.magicEdenDisconnect();
+    await magicEden.magicEdenAddresses();
+    expect(provider.connect).toHaveBeenCalledTimes(3);
   });
 
   it('se connecte une seule fois via un jeton non signé', async () => {

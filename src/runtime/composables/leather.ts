@@ -3,6 +3,7 @@ import { UserRejectedRequestError } from 'viem';
 import type { BitcoinAddress, WagmiBtcAddress } from '../types/wagmi-btc';
 import { ref } from 'vue';
 import { convertPsbt } from './tools';
+import { useBitcoinNetwork } from '../utils/network';
 
 const cardinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
 const ordinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
@@ -66,6 +67,12 @@ export const leatherConnect = async (): Promise<WagmiBtcAddress> => {
   }
 };
 
+/** Oublie les adresses mémorisées (changement de compte, déconnexion) */
+export const leatherDisconnect = () => {
+  cardinalAddress.value = { address: '', publicKey: '' };
+  ordinalAddress.value = { address: '', publicKey: '' };
+};
+
 // Peut être utile pour récupérer les addresses sans relancer la connexion.
 export const leatherAddresses = async (): Promise<WagmiBtcAddress> => {
   if (cardinalAddress.value.address !== '' && ordinalAddress.value.address !== '') {
@@ -102,31 +109,25 @@ export const leatherSignPsbt = async (
     inputs[v.address] = v.signingIndexes;
   }
   const response = await provider.request('signPsbt', {
-    hex: convertPsbt(psbt, 'hex', true),
+    hex: convertPsbt(psbt, 'hex'),
     broadcast: broadcast,
     signInputs: inputs,
+    network: useBitcoinNetwork().leather,
   });
 
   const result = response.result as { hex: string; txid: string };
 
   return {
-    psbt: convertPsbt(result.hex, 'base64', true),
+    psbt: convertPsbt(result.hex, 'base64'),
     txid: result.txid,
   };
-
-  // return (
-  //   response.result as {
-  //     status: string;
-  //     result: SignPsbtResult;
-  //   }
-  // ).result;
 };
 
 export const leatherSendBtc = async (recipients: { address: string; amount: number }[]): Promise<string> => {
   const provider = leatherProvider();
 
   const response = await provider.request<SendTransferResult>('sendTransfer', {
-    network: 'mainnet',
+    network: useBitcoinNetwork().leather,
     recipients: recipients.map((r) => ({
       address: r.address,
       amount: r.amount.toString(),

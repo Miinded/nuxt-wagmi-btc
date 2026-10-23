@@ -2,6 +2,7 @@ import type { BitcoinProvider } from '../types/wagmi-btc';
 import {
   leatherAddresses,
   leatherConnect,
+  leatherDisconnect,
   leatherProvider,
   leatherSendBtc,
   leatherSignMessage,
@@ -10,6 +11,7 @@ import {
 import {
   magicEdenAddresses,
   magicEdenConnect,
+  magicEdenDisconnect,
   magicEdenProvider,
   magicEdenSendBtc,
   magicEdenSignMessage,
@@ -34,6 +36,7 @@ import {
 import {
   xverseAddresses,
   xverseConnect,
+  xverseDisconnect,
   xverseProvider,
   xverseSendBtc,
   xverseSignMessage,
@@ -50,6 +53,7 @@ export const getProviders = (): BitcoinProvider[] => {
       signaturePsbt: magicEdenSignPsbt,
       sendBtc: magicEdenSendBtc,
       getAddresses: magicEdenAddresses,
+      disconnect: magicEdenDisconnect,
     },
     {
       id: 'leather',
@@ -59,6 +63,7 @@ export const getProviders = (): BitcoinProvider[] => {
       signaturePsbt: leatherSignPsbt,
       sendBtc: leatherSendBtc,
       getAddresses: leatherAddresses,
+      disconnect: leatherDisconnect,
     },
     {
       id: 'xverse',
@@ -68,6 +73,7 @@ export const getProviders = (): BitcoinProvider[] => {
       signaturePsbt: xverseSignPsbt,
       sendBtc: xverseSendBtc,
       getAddresses: xverseAddresses,
+      disconnect: xverseDisconnect,
     },
     {
       id: 'phantom',
@@ -77,6 +83,8 @@ export const getProviders = (): BitcoinProvider[] => {
       signaturePsbt: phantomSignPsbt,
       sendBtc: phantomSendBtc,
       getAddresses: phantomAddresses,
+      // pas d'adresses mémorisées : chaque appel interroge le portefeuille
+      disconnect: () => {},
     },
     {
       id: 'unisat',
@@ -86,6 +94,8 @@ export const getProviders = (): BitcoinProvider[] => {
       signaturePsbt: unisatSignPsbt,
       sendBtc: unisatSendBtc,
       getAddresses: unisatAddresses,
+      // pas d'adresses mémorisées : chaque appel interroge le portefeuille
+      disconnect: () => {},
     },
   ];
 };

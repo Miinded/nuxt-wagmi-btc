@@ -1,32 +1,31 @@
 import type { Address, BitcoinProvider, InputToSign, SignPsbtResult, SignTransactionResponse } from 'sats-connect';
-import { AddressPurpose, BitcoinNetworkType } from 'sats-connect';
+import { AddressPurpose } from 'sats-connect';
 import { UserRejectedRequestError } from 'viem';
 import { createUnsecuredToken } from 'jsontokens';
 import type { BitcoinAddress, WagmiBtcAddress } from '../types/wagmi-btc';
 import { convertPsbt, sendBtcTransaction, signMessage, signTransaction } from './tools';
 import { ref } from 'vue';
+import { useBitcoinNetwork } from '../utils/network';
 
 const cardinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
 const ordinalAddress = ref<BitcoinAddress>({ address: '', publicKey: '' });
 
+/** Oublie les adresses mémorisées (changement de compte, déconnexion) */
+export const magicEdenDisconnect = () => {
+  cardinalAddress.value = { address: '', publicKey: '' };
+  ordinalAddress.value = { address: '', publicKey: '' };
+};
+
+let watching = false;
+
 export const magicEdenProvider = () => {
-  let magicEdenProvider = null;
-  if ('magicEden' in window) {
-    const anyWindow: any = window;
-    if (!anyWindow.magicEden.bitcoin || !anyWindow.magicEden.bitcoin.isMagicEden) {
-      return;
-    }
-    const provider = anyWindow.magicEden.bitcoin;
-    if (provider) {
-      magicEdenProvider = provider;
-    } else {
-      window.open('https://wallet.magiceden.io', '_blank');
-    }
-  }
+  // window.magicEden peut exister sans le portefeuille Bitcoin (extension EVM / Solana seule)
+  const bitcoin = 'magicEden' in window ? (window as any).magicEden?.bitcoin : undefined;
+  const magicEdenProvider = bitcoin?.isMagicEden ? bitcoin : null;
 
   return magicEdenProvider as {
     connect(jsonUnsecuredToken: string): { addresses: Address[] };
-    on(key: string, callable: CallableFunction): Promise<void>;
+    on?(key: string, callable: CallableFunction): Promise<void>;
     request<T>(
       action?: string,
       params?: any,
@@ -52,7 +51,7 @@ export const magicEdenConnect = async (): Promise<WagmiBtcAddress> => {
       createUnsecuredToken({
         message: 'Connect Magic Eden',
         purposes: [AddressPurpose.Payment, AddressPurpose.Ordinals],
-        network: { type: BitcoinNetworkType.Mainnet },
+        network: { type: useBitcoinNetwork().satsConnect },
       }),
     );
 
@@ -61,6 +60,11 @@ export const magicEdenConnect = async (): Promise<WagmiBtcAddress> => {
       cardinalAddress.value = { address: cardinal?.address || '', publicKey: cardinal?.publicKey || '' };
       const ordinal = result.addresses.find((address: Address) => address.purpose === AddressPurpose.Ordinals);
       ordinalAddress.value = { address: ordinal?.address || '', publicKey: ordinal?.publicKey || '' };
+    }
+    // un changement de compte dans Magic Eden invalide les adresses mémorisées
+    if (!watching && provider.on) {
+      watching = true;
+      void provider.on('accountsChanged', magicEdenDisconnect);
     }
   } catch (e) {
     console.error(e);
@@ -96,7 +100,7 @@ export const magicEdenSignMessage = async (message: string | JSON): Promise<stri
       getProvider: async () => provider as unknown as BitcoinProvider,
       payload: {
         network: {
-          type: BitcoinNetworkType.Mainnet,
+          type: useBitcoinNetwork().satsConnect,
         },
         address: addresses?.payment.address,
         message: JSON.stringify(message),
@@ -126,7 +130,7 @@ export const magicEdenSignPsbt = async (
       getProvider: async () => provider as unknown as BitcoinProvider,
       payload: {
         network: {
-          type: BitcoinNetworkType.Mainnet,
+          type: useBitcoinNetwork().satsConnect,
         },
         psbtBase64: convertPsbt(psbt, 'base64'),
         broadcast,
@@ -164,7 +168,7 @@ export const magicEdenSendBtc = async (recipients: { address: string; amount: nu
       getProvider: async () => provider as unknown as BitcoinProvider,
       payload: {
         network: {
-          type: BitcoinNetworkType.Mainnet,
+          type: useBitcoinNetwork().satsConnect,
         },
         senderAddress: addresses!.payment.address,
         recipients: tos,

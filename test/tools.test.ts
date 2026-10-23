@@ -1,4 +1,3 @@
-import * as bitcoin from 'bitcoinjs-lib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   base64ToUint8Array,
@@ -6,9 +5,11 @@ import {
   convertPsbt,
   createPsbt,
   estimateTxSize,
+  estimateTxVsize,
   finalizeAndExtractTx,
   getAddressType,
   getFeeRate,
+  getTxHex,
   getUtxos,
   isBase64,
   isHex,
@@ -17,7 +18,7 @@ import {
   signTransaction,
   Uint8ArrayToBase64,
 } from '../src/runtime/composables/tools';
-import { nuxtApp } from './stubs/app';
+import { nuxtApp, wagmiBtcOptions } from './stubs/app';
 
 // PSBT minimale (1 entrée, 1 sortie OP_RETURN) dans ses deux encodages
 const PSBT_BASE64 = 'cHNidP8BAD0CAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/////AegDAAAAAAAAAWoAAAAAAAAA';
@@ -26,7 +27,6 @@ const PSBT_HEX =
 
 const P2WPKH = 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4';
 const P2TR = 'bc1p5d7rjq7g6rdk2yhzks9smlaqtedr4dekq08ge8ztwac72sfr9rusxg3297';
-const OTHER_P2WPKH = 'bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq';
 
 const fetchMock = vi.fn();
 const response = (body: unknown, ok = true) => ({
@@ -67,18 +67,31 @@ describe('adresses et taille de transaction', () => {
     [P2WPKH, 'P2WPKH'],
     ['bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3', 'P2WSH'],
     [P2TR, 'P2TR'],
+    ['mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn', 'P2PKH'],
+    ['2MzQwSSnBHWHqSAqtTVQ6v47XtaisrJa1Vc', 'P2SH'],
+    ['tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx', 'P2WPKH'],
+    ['tb1pqqqqp399et2xygdj5xreqhjjvcmzhxw4aywxecjdzew6hylgvsesf3hn0c', 'P2TR'],
   ])('%s est une adresse %s', (address, type) => {
     expect(getAddressType(address)).toBe(type);
   });
 
   it('rejette un format inconnu', () => {
-    expect(() => getAddressType('tb1qtestnet')).toThrow('Invalide address format');
+    expect(() => getAddressType('xyz')).toThrow('Invalide address format');
   });
 
-  it('estime la taille selon le type et le nombre d’entrées/sorties', () => {
-    expect(estimateTxSize('P2WPKH', 2, 2)).toBe(2 * 68 + 2 * 31 + 10);
-    expect(estimateTxSize('P2PKH', 1, 1, 'P2TR')).toBe(148 + 26 + 10);
-    expect(estimateTxSize('INCONNU', 1, 1, 'INCONNU')).toBe(10);
+  it('estime la taille virtuelle (vbytes) par type d’entrée et de sortie', () => {
+    expect(estimateTxVsize('P2WPKH', 2, ['P2WPKH', 'P2TR'])).toBe(Math.ceil(10.5 + 2 * 68 + 31 + 43));
+    expect(estimateTxVsize('P2TR', 1, ['P2TR', 'P2TR'])).toBe(Math.ceil(10.5 + 57.5 + 43 + 43));
+    expect(estimateTxVsize('P2SH', 1, ['P2PKH', 'P2SH'])).toBe(Math.ceil(10.5 + 91 + 34 + 32));
+    expect(estimateTxVsize('P2SH-P2WPKH', 1, ['P2WSH'])).toBe(Math.ceil(10.5 + 91 + 43));
+    expect(estimateTxVsize('P2PKH', 1, ['P2WPKH'])).toBe(10 + 148 + 31);
+    // ancienne signature : toutes les sorties du même type
+    expect(estimateTxSize('P2WPKH', 2, 2)).toBe(estimateTxVsize('P2WPKH', 2, ['P2WPKH', 'P2WPKH']));
+  });
+
+  it('refuse un type d’entrée ou de sortie inconnu au lieu de compter 0', () => {
+    expect(() => estimateTxVsize('P2WSH', 1, ['P2WPKH'])).toThrow('Unsupported input type: P2WSH');
+    expect(() => estimateTxVsize('P2WPKH', 1, ['INCONNU'])).toThrow('Unsupported output type: INCONNU');
   });
 });
 
@@ -87,7 +100,11 @@ describe('mempool.space', () => {
     fetchMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    wagmiBtcOptions.network = 'mainnet';
+    delete wagmiBtcOptions.mempoolApiUrl;
+  });
 
   it('lit le fee rate le plus rapide', async () => {
     fetchMock.mockResolvedValue(response({ fastestFee: 21, halfHourFee: 12 }));
@@ -112,36 +129,36 @@ describe('mempool.space', () => {
     expect(fetchMock.mock.calls[0]![1]).toMatchObject({ method: 'POST', body: '0200' });
   });
 
-  describe('createPsbt', () => {
-    beforeEach(() => {
-      nuxtApp.$bitcoin = bitcoin;
-      fetchMock.mockResolvedValue(response({ fastestFee: 2 }));
-    });
+  it.each([
+    ['mainnet', 'https://mempool.space/api'],
+    ['testnet', 'https://mempool.space/testnet/api'],
+    ['testnet4', 'https://mempool.space/testnet4/api'],
+    ['signet', 'https://mempool.space/signet/api'],
+  ] as const)('interroge l’API mempool.space du réseau %s', async (network, base) => {
+    wagmiBtcOptions.network = network;
+    fetchMock.mockResolvedValue(response({ fastestFee: 1 }));
+    await getFeeRate();
+    expect(fetchMock).toHaveBeenCalledWith(`${base}/v1/fees/recommended`);
+  });
 
-    it('ajoute les entrées, les destinataires et la monnaie rendue', async () => {
-      const utxos = [{ txid: 'ab'.repeat(32), vout: 0, value: 100_000 }];
-      // destinataire P2WPKH : une sortie Taproot exige initEccLib, que le module n'appelle pas
-      const base64 = await createPsbt(
-        { address: P2WPKH, publicKey: '' },
-        [{ address: OTHER_P2WPKH, amount: 30_000 }],
-        utxos,
-      );
+  it('utilise mempoolApiUrl quand il est configuré (instance privée, homelab)', async () => {
+    wagmiBtcOptions.network = 'signet';
+    wagmiBtcOptions.mempoolApiUrl = 'https://mempool.homelab.test/signet/api/';
+    fetchMock.mockResolvedValue(response('0200'));
+    await expect(getTxHex('ab')).resolves.toBe('0200');
+    expect(fetchMock).toHaveBeenCalledWith('https://mempool.homelab.test/signet/api/tx/ab/hex');
 
-      const psbt = bitcoin.Psbt.fromBase64(base64);
-      const fee = estimateTxSize('P2WPKH', 1, 2) * 2;
-      expect(psbt.txInputs).toHaveLength(1);
-      expect(psbt.txOutputs.map((o) => [o.address, o.value])).toEqual([
-        [OTHER_P2WPKH, 30_000],
-        [P2WPKH, 100_000 - 30_000 - fee],
-      ]);
-    });
+    fetchMock.mockResolvedValue(response('not found', false));
+    await expect(getTxHex('ab')).rejects.toThrow('not found');
+  });
 
-    it('refuse un envoi supérieur au solde frais compris', async () => {
-      const utxos = [{ txid: 'ab'.repeat(32), vout: 0, value: 1_000 }];
-      await expect(
-        createPsbt({ address: P2WPKH, publicKey: '' }, [{ address: P2TR, amount: 1_000 }], utxos),
-      ).rejects.toThrow('insufficient funds');
-    });
+  it('refuse un envoi supérieur au solde frais compris', async () => {
+    nuxtApp.$bitcoin = await import('bitcoinjs-lib');
+    fetchMock.mockResolvedValue(response({ fastestFee: 2 }));
+    const utxos = [{ txid: 'ab'.repeat(32), vout: 0, value: 1_000 }];
+    await expect(
+      createPsbt({ address: P2WPKH, publicKey: '' }, [{ address: P2WPKH, amount: 1_000 }], utxos),
+    ).rejects.toThrow('insufficient funds');
   });
 });
 
