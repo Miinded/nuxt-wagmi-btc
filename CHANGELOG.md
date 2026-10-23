@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.0.0
+
+### Major Changes
+
+- Published on npm from [GitHub](https://github.com/Miinded/nuxt-wagmi-btc) instead of the GitLab registry.
+- Requires Nuxt 4 (`compatibility.nuxt >= 4.0.0`); `nuxt` and `vue` are peer dependencies.
+- `vite-plugin-node-polyfills` is no longer a dependency: the app installs and configures it.
+- Types live in `runtime/types` and are exported from the package root (`BitcoinAddress`, `BitcoinRecipient` and
+  `WagmiBtcAddress` added).
+- `xverse.connect()` rejects on user refusal or wallet errors instead of resolving with empty addresses.
+
+### Minor Changes
+
+- `convertPsbt` detects the input format (hex or base64); its `force` argument has no effect.
+
+### Patch Changes
+
+- `getAddresses()` of Xverse, Leather and Magic Eden connects when no address is known yet.
+- A wallet without a payment or ordinals address no longer crashes `connect()`.
+- `unisatSendBtc` no longer empties the recipients array it receives.
+- `jsontokens` declared as a dependency (it was only available transitively).
+- Removed the type reference to a non-existent `wagmi-btc` package.
+
+
 
 ## v0.1.14
 

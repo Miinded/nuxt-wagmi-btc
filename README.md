@@ -1,109 +1,165 @@
-<!--
-Get your module up and running quickly.
+# @miinded/nuxt-wagmi-btc
 
-Find and replace all on all files (CMD+SHIFT+F):
-- Name: Wagmi BTC
-- Package name: wagmi-btc
-- Description: The Bitcoin equivalent of Wagmi
--->
+[![npm version](https://img.shields.io/npm/v/@miinded/nuxt-wagmi-btc.svg)](https://www.npmjs.com/package/@miinded/nuxt-wagmi-btc)
+[![license](https://img.shields.io/npm/l/@miinded/nuxt-wagmi-btc.svg)](./LICENSE)
+[![Quality](https://github.com/Miinded/nuxt-wagmi-btc/actions/workflows/quality.yml/badge.svg)](https://github.com/Miinded/nuxt-wagmi-btc/actions/workflows/quality.yml)
+[![codecov](https://codecov.io/gh/Miinded/nuxt-wagmi-btc/graph/badge.svg)](https://codecov.io/gh/Miinded/nuxt-wagmi-btc)
+[![Nuxt](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt.js)](https://nuxt.com)
 
-# Wagmi BTC
-
-[![npm version][npm-version-src]][npm-version-href]
-[![npm downloads][npm-downloads-src]][npm-downloads-href]
-[![License][license-src]][license-href]
-[![Nuxt][nuxt-src]][nuxt-href]
-
-The Bitcoin equivalent of Wagmi for doing amazing things.
-
-- [✨ &nbsp;Release Notes](/CHANGELOG.md)
-  <!-- - [🏀 Online playground](https://stackblitz.com/github/@miinded/nuxt-wagmi-btc?file=playground%2Fapp.vue) -->
-  <!-- - [📖 &nbsp;Documentation](https://example.com) -->
+A [Nuxt](https://nuxt.com) module that connects **Bitcoin wallets** behind a single, wagmi-like API. Your app talks to
+one `BitcoinProvider` interface; the module handles the differences between Xverse, Leather, Magic Eden, Phantom and
+Unisat.
 
 ## Features
 
-<!-- Highlight some of the features your module provide here -->
+- Five wallets out of the box: **Xverse**, **Leather**, **Magic Eden**, **Phantom** and **Unisat**.
+- One interface per wallet: connect, payment and ordinals addresses, message signing, PSBT signing (with optional
+  broadcast) and BTC transfers.
+- Configurable list of connectors, with wallet icons served by the module.
+- `bitcoinjs-lib` provided to the client as `$bitcoin`.
+- PSBT helpers that accept hex or base64 input.
 
-- ⛰ &nbsp;Foo
-- 🚠 &nbsp;Bar
-- 🌲 &nbsp;Baz
+## Requirements
 
-## Quick Setup
+| Package | Version |
+| ------- | ------- |
+| Node.js | `>= 24` |
+| Nuxt    | `4`     |
+| Vue     | `3.5`   |
 
-Install the module to your Nuxt application with one command:
+Wallets run in the browser: call the composables from client-side code only (event handlers, `onMounted`, `.client`
+components).
 
-Add in uncommitted .npmrc
-
-```
-@miinded:registry=https://gitlab.com/api/v4/packages/npm/
-//gitlab.com/api/v4/packages/npm/:_authToken=<MiindedToken>
-```
-
-and install with :
+## Installation
 
 ```bash
-npx nuxi@latest module add @miinded/nuxt-wagmi-btc
+pnpm add @miinded/nuxt-wagmi-btc
+pnpm add -D vite-plugin-node-polyfills
 ```
 
-Configure your app with :
+Wallet libraries rely on Node globals such as `Buffer`, so the app needs browser polyfills (the module itself defines
+the CommonJS `exports` global they also expect):
+
 ```ts
+// nuxt.config.ts
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+
 export default defineNuxtConfig({
   modules: ['@miinded/nuxt-wagmi-btc'],
-  app:  {
-    head: {
-      script: [{ textContent: 'exports = {};' }],
-    }
-  },
-   vite: {
+  vite: {
     optimizeDeps: {
-      include: ['buffer', 'jsontokens', 'bitcoinjs-lib'], 
+      include: ['buffer', 'jsontokens', 'bitcoinjs-lib'],
     },
     plugins: [nodePolyfills()],
+  },
+  wagmiBtc: {
+    // optional — defaults shown
+    iconPath: '/icon',
+    connectors: [
+      { id: 'magicEden', name: 'Magic Eden', icon: ':iconPath/magiceden-icon.png' },
+      { id: 'leather', name: 'Leather', icon: ':iconPath/leather-icon.png' },
+      { id: 'xverse', name: 'Xverse', icon: ':iconPath/xverse-icon.png' },
+      { id: 'phantom', name: 'Phantom', icon: ':iconPath/phantom-icon.png' },
+      { id: 'unisat', name: 'Unisat', icon: ':iconPath/unisat-icon.png' },
+    ],
   },
 });
 ```
 
-That's it! You can now use Wagmi BTC in your Nuxt app ✨
+`:iconPath` in a connector icon is replaced by `iconPath`. The module serves its icons under `/icon/`.
 
-## Contribution
+## Usage
 
-<details>
-  <summary>Local development</summary>
-  
-  ```bash
-  # Install dependencies
-  npm install
-  
-  # Generate type stubs
-  npm run dev:prepare
-  
-  # Develop with the playground
-  npm run dev
-  
-  # Build the playground
-  npm run dev:build
-  
-  # Run ESLint
-  npm run lint
-  
-  # Run Vitest
-  npm run test
-  npm run test:watch
-  
-  # Release new version
-  npm run release
-  ```
+```vue
+<script setup lang="ts">
+import type { BitcoinConnector, BitcoinProvider, WagmiBtcAddress } from '@miinded/nuxt-wagmi-btc';
 
-</details>
+const connectors = getConnectors();
+const wallet = shallowRef<BitcoinProvider>();
+const account = ref<WagmiBtcAddress>();
 
-<!-- Badges -->
+const connect = async (connector: BitcoinConnector) => {
+  wallet.value = getProvider(connector);
+  account.value = await wallet.value.connect(); // throws viem's UserRejectedRequestError on refusal
+};
 
-[npm-version-src]: https://img.shields.io/npm/v/wagmi-btc/latest.svg?style=flat&colorA=020420&colorB=00DC82
-[npm-version-href]: https://npmjs.com/package/wagmi-btc
-[npm-downloads-src]: https://img.shields.io/npm/dm/wagmi-btc.svg?style=flat&colorA=020420&colorB=00DC82
-[npm-downloads-href]: https://npm.chart.dev/wagmi-btc
-[license-src]: https://img.shields.io/npm/l/wagmi-btc.svg?style=flat&colorA=020420&colorB=00DC82
-[license-href]: https://npmjs.com/package/wagmi-btc
-[nuxt-src]: https://img.shields.io/badge/Nuxt-020420?logo=nuxt.js
-[nuxt-href]: https://nuxt.com
+const signIn = () => wallet.value!.signature({ domain: location.host, nonce: '42' });
+const pay = () => wallet.value!.sendBtc([{ address: 'bc1q…', amount: 15_000 }]); // satoshis, returns the txid
+</script>
+
+<template>
+  <button v-for="connector in connectors" :key="connector.id" @click="connect(connector)">
+    <img :src="connector.icon" :alt="connector.name" /> {{ connector.name }}
+  </button>
+  <p v-if="account">Payment: {{ account.payment.address }} — Ordinals: {{ account.ordinal.address }}</p>
+</template>
+```
+
+### Signing a PSBT
+
+```ts
+const result = await wallet.value!.signaturePsbt(
+  psbtBase64OrHex,
+  [{ address: account.value!.payment.address, signingIndexes: [0, 1] }],
+  true, // broadcast once signed
+);
+result.psbt; // signed PSBT (base64)
+result.txid; // set when broadcast
+```
+
+## API
+
+### Composables (auto-imported)
+
+| Composable                  | Returns              | Description                                                         |
+| --------------------------- | -------------------- | ------------------------------------------------------------------- |
+| `getConnectors()`           | `BitcoinConnector[]` | Connectors configured in `wagmiBtc.connectors`                      |
+| `getProvider(connector)`    | `BitcoinProvider`    | Wallet implementation of a connector                                |
+| `getProviders()`            | `BitcoinProvider[]`  | All supported wallets                                               |
+| `useWagmiBtc()`             | `ModuleOptions`      | Resolved module options                                             |
+| `convertPsbt(psbt, format)` | `string`             | Converts a PSBT to `'hex'` or `'base64'`, whatever its input format |
+
+### `BitcoinProvider`
+
+| Member                                   | Description                                                         |
+| ---------------------------------------- | ------------------------------------------------------------------- |
+| `id`                                     | `magicEden`, `leather`, `xverse`, `phantom` or `unisat`             |
+| `provider()`                             | Object injected by the wallet extension (`null` when not installed) |
+| `connect()`                              | Asks the user to connect; resolves `{ payment, ordinal }` addresses |
+| `getAddresses()`                         | Connected addresses (connects first if needed)                      |
+| `signature(message)`                     | Signs `JSON.stringify(message)` with the payment address            |
+| `signaturePsbt(psbt, inputs, broadcast)` | Signs a PSBT; `inputs` lists `{ address, signingIndexes }`          |
+| `sendBtc(recipients)`                    | Sends BTC (`{ address, amount }` in satoshis) and returns the txid  |
+
+Unisat sends to a single recipient; Phantom builds the transaction itself from the payment address UTXOs
+(mempool.space).
+
+### Types
+
+`BitcoinAddress`, `BitcoinConnector`, `BitcoinProvider`, `BitcoinRecipient`, `ModuleOptions` and `WagmiBtcAddress` are
+exported from `@miinded/nuxt-wagmi-btc`.
+
+## Limitations
+
+- **Mainnet only**: networks are hard-coded to Bitcoin mainnet and mempool.space mainnet.
+- **Phantom transfers to Taproot (`bc1p…`) addresses** fail: `bitcoinjs-lib` needs an ECC library that the module does
+  not initialise.
+
+## Migrating from 0.x
+
+- Nuxt 4 is required; `nuxt` and `vue` are now **peer dependencies**.
+- `vite-plugin-node-polyfills` is no longer installed by the module: add it to your app (see Installation).
+- Types moved to `runtime/types`; import them from the package root (`@miinded/nuxt-wagmi-btc`).
+- `xverse.connect()` now rejects when the user refuses or the wallet fails (it used to resolve with empty addresses).
+- `getAddresses()` of Xverse, Leather and Magic Eden connects when no address is known yet (it used to return empty
+  addresses).
+- `convertPsbt` detects the input format; its third argument (`force`) is ignored.
+- Published on npm: remove the GitLab registry lines (`@miinded:registry=…`) from your `.npmrc`.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## License
+
+[MIT](./LICENSE)
